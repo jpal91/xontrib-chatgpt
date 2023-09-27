@@ -4,8 +4,7 @@ import json
 import weakref
 from collections import namedtuple
 from dataclasses import dataclass
-from textwrap import dedent
-from typing import TextIO, Union
+from typing import TextIO, Union, Optional
 from xonsh.built_ins import XSH, XonshSession
 from xonsh.tools import print_color, indent
 from xonsh.contexts import Block
@@ -110,10 +109,11 @@ class ChatEnv:
     def __contains__(self, key):
         return key in vars(self)
 
-def env_handler(name: str, oldvalue: str, newvalue: str):
+def env_handler(name: str, oldvalue: str, newvalue: str, chat_env: ChatEnv, **_):
     """Env change event handler, updates local env state"""
-    if name in chatenv:
-        setattr(chatenv, name, newvalue)
+
+    if name in chat_env:
+        setattr(chat_env, name, newvalue)
 
 #############
 
@@ -251,12 +251,15 @@ class ChatGPT(Block):
         return PYGMENTS.highlight(match.group(2), lexer, PYGMENTS.Terminal256Formatter(style=PYGMENTS.GhDarkStyle))
         
     
-    def _print_res(self, res: str):        
+    def _print_res(self, res: str) -> Optional[str]:        
         """Called after receiving response from ChatGPT, prints the response to the shell"""
         res = self._format_markdown(res)
         res = indent(res)
         print(ansi_partial_color_format('\n{BOLD_BLUE}ChatGPT:{RESET}\n'))
         print(res)
+
+        if self._pytest_running:
+            return res
     
     def _format_markdown(self, text: str) -> str:
         """Formats the text using the Pygments Markdown Lexer, removes markdown code '`'s"""
@@ -404,13 +407,14 @@ class ChatGPT(Block):
 
 
 chatenv = ChatEnv()
+lambda_env_change = lambda name, oldvalue, newvalue, **_: env_handler(name, oldvalue, newvalue, chatenv)
     
 def _load_xontrib_(xsh: XonshSession, **_):
     xsh.aliases['chatgpt'] = lambda args, stdin=None: ChatGPT.fromcli(args, stdin)
-    xsh.builtins.events.on_envvar_change(env_handler)
+    xsh.builtins.events.on_envvar_change(lambda_env_change)
 
     return {'ChatGPT': ChatGPT}
 
 def _unload_xontrib_(xsh: XonshSession, **_):
     del XSH.aliases['chatgpt']
-    xsh.builtins.events.on_envvar_change.remove(env_handler)
+    xsh.builtins.events.on_envvar_change.remove(lambda_env_change)
