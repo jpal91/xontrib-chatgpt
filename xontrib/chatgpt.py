@@ -1,10 +1,11 @@
+import os
 import re
 import json
 import weakref
 from collections import namedtuple
 from dataclasses import dataclass
 from textwrap import dedent
-from typing import TextIO
+from typing import TextIO, Union
 from xonsh.built_ins import XSH, XonshSession
 from xonsh.tools import print_color, indent
 from xonsh.contexts import Block
@@ -13,6 +14,10 @@ from xonsh.ansi_colors import ansi_partial_color_format
 
 __all__ = ()
 
+
+#############
+# Lazy Objects
+#############
 @lazyobject
 def openai():
     import openai
@@ -51,14 +56,50 @@ def markdown():
 
     return lambda text: highlight(text, MarkdownLexer(), Terminal256Formatter(style=GhDarkStyle))
 
-class NoApiKey(Exception):
+#############
+
+
+#############
+# Exceptions
+#############
+class NoApiKeyError(Exception):
     """Raised when no API key is found"""
-    pass
+    def __init__(self, *_):
+        pass
 
-class UnsupportedModel(Exception):
+    def __str__(self):
+        return '\n\x1b[1;31mNo OpenAI API key found'
+
+class UnsupportedModelError(Exception):
     """Raised when an unsupported model is used"""
-    pass
+    def __init__(self, msg: str, *_):
+        self.msg = msg
+    
+    def __str__(self):
+        return f'\n\x1b[1;31m{self.msg}'
 
+class NoConversationsError(Exception):
+    """Raised when attempting to print/save a conversation when there is no conversation history"""
+    def __init__(self, *_):
+        pass
+
+    def __str__(self):
+        return '\n\x1b[1;31mNo conversation history!'
+
+class InvalidConversationsTypeError(Exception):
+    """Raised when attempting to print/save a conversation with an invalid type"""
+    def __init__(self, msg: str, *_):
+        self.msg = msg
+
+    def __str__(self):
+        return f'\n\x1b[1;31m{self.msg}'
+
+#############
+
+
+#############
+# Env Handlers
+#############
 @dataclass
 class ChatEnv:
     """Helper class to improve efficiency in getting env variables"""
@@ -74,11 +115,26 @@ def env_handler(name: str, oldvalue: str, newvalue: str):
     if name in chatenv:
         setattr(chatenv, name, newvalue)
 
+#############
 
+
+#############
+# ChatGPT Class
+#############
 class ChatGPT(Block):
+    """Allows for communication with ChatGPT from the xonsh shell"""
     __xonsh_block__ = str
+    _pytest_running = os.environ.get('PYTEST_RUNNING', False)
     
     def __init__(self, alias:str=''):
+        """
+        Initializes the ChatGPT instance
+        
+        Args:
+            alias (str, optional): Alias to use for the instance. Defaults to ''.
+                Will automatically register a xonsh alias under XSH.aliases[alias] if provided.
+        """
+
         self.alias = alias
         self.base: list[dict[str, str]] = [
             {"role": "system", "content": "You are a helpful assistant."}
@@ -94,7 +150,7 @@ class ChatGPT(Block):
 
     def __enter__(self):
         res = self.chat(self.macro_block.strip())
-        self.print_res(res)
+        self._print_res(res)
         return self
     
     def __exit__(self, *_):
@@ -108,35 +164,52 @@ class ChatGPT(Block):
         else:
             return
         
-        self.print_res(res)
+        self._print_res(res)
     
     def __del__(self):
         if self.alias and self.alias in XSH.aliases:
             print(f'Deleting {self.alias}')
             del XSH.aliases[self.alias]
     
+    def __str__(self):
+        stats = self._stats()
+        return '\n'.join([f'{k}: {v}' for k,v,_ in stats])
+    
+    def __repr__(self):
+        return f'ChatGPT(alias={self.alias or None})'
+    
     @property
     def tokens(self):
+        """Current convo tokens"""
         return sum(self._tokens)
     
     @property
     def stats(self):
-        stats = f"""
-        Tokens: {self.tokens}
-        Trim After: {self._max_tokens} Tokens
-        Mode: {chatenv.OPENAI_CHAT_MODEL}
-        Messages: {len(self.messages)}
-        """
-        return print(dedent(stats))
+        """Prints conversation stats to shell"""
+        stats = self._stats()
+        for k,v,c in stats:
+            print_color('{}{}{} {}'.format(c, k, '{BOLD_WHITE}', v))
+    
+    def _stats(self) -> str:
+        stats = [
+            ('Alias:', f'{self.alias or None}', '{BOLD_YELLOW}'),
+            ('Tokens:', self.tokens, '{BOLD_GREEN}'),
+            ('Trim After:', f'{self._max_tokens} Tokens', '{BOLD_BLUE}'),
+            ('Mode:', chatenv.OPENAI_CHAT_MODEL, '{BOLD_BLUE}'),
+            ('Messages:', len(self.messages), '{BOLD_BLUE}'),
+        ]
+        return stats
     
     def chat(self, text):
+        """Main chat function for interfacing with OpenAI API"""
         api_key = chatenv.OPENAI_API_KEY
         if not api_key:
-            raise NoApiKey('No OpenAI API key found')
+            raise NoApiKeyError()
         
         model = chatenv.OPENAI_CHAT_MODEL
-        if model not in ['gpt-3.5-turbo', 'gpt-4']:
-            raise UnsupportedModel(f'Unsupported model: {model}')
+        choices = ['gpt-3.5-turbo', 'gpt-4']
+        if model not in choices:
+            raise UnsupportedModelError(f'Unsupported model: {model} - options are {choices}')
         
         self.messages.append({"role": "user", "content": text})
 
@@ -155,17 +228,18 @@ class ChatGPT(Block):
         self._tokens.append(tokens)
 
         if self.tokens >= self._max_tokens:
-            self.trim()
+            self._trim()
 
         return res_text['content']
     
-    def trim(self):
+    def _trim(self):
+        """Trims conversation to make sure it doesn't exceed the max tokens"""
         tokens = self.tokens
         while tokens > self._max_tokens:
             self.messages.pop(0)
             tokens -= self._tokens.pop(0)
     
-    def handle_code_block(self, match: re.Match) -> str:
+    def _handle_code_block(self, match: re.Match) -> str:
         """Matches any code block in the string, strips each of the leading/following "`"s, 
             and uses pygments to highlight
         """
@@ -177,23 +251,27 @@ class ChatGPT(Block):
         return PYGMENTS.highlight(match.group(2), lexer, PYGMENTS.Terminal256Formatter(style=PYGMENTS.GhDarkStyle))
         
     
-    def print_res(self, res: str):        
+    def _print_res(self, res: str):        
+        """Called after receiving response from ChatGPT, prints the response to the shell"""
         res = self._format_markdown(res)
         res = indent(res)
         print(ansi_partial_color_format('\n{BOLD_BLUE}ChatGPT:{RESET}\n'))
         print(res)
     
     def _format_markdown(self, text: str) -> str:
+        """Formats the text using the Pygments Markdown Lexer, removes markdown code '`'s"""
         text = markdown(text)
         text = MULTI_LINE_CODE.sub('', text)
         text = SINGLE_LINE_CODE.sub(r'\1', text)
         return text
     
     def _get_json_convo(self, n: int) -> list[dict[str, str]]:
+        """Returns the current conversation as a JSON string, up to n last items"""
         n = -n if n != 0 else 0
         return json.dumps(self.messages[n:], indent=4)
 
-    def _get_printed_convo(self, n: int, color=True) -> list[tuple[str, str]]:
+    def _get_printed_convo(self, n: int, color=True) -> list[Union[tuple[str, str], dict[str, str]]]:
+        """Helper method to get up to n items of conversation, formatted for printing"""
         user = XSH.env.get('USER', 'user')
         convo = []
         n = -n if n != 0 else 0
@@ -215,31 +293,52 @@ class ChatGPT(Block):
         
         return convo
 
-    def print_convo(self, n=10, mode='color'):
+    def print_convo(self, n=10, mode='color') -> list[tuple[str, str]]:
+        """Prints the current conversation to shell, up to n last items, in the specified mode
+        
+        Args:
+            n (int, optional): Number of items to print, starting from the last response. Defaults to 10. 0 == all.
+            mode (str, optional): Mode to print in. Defaults to 'color'. Options - 'color', 'no-color', 'json'
+        
+        Examples:
+            >>> chatgpt.print_convo(5, 'color') # prints the last 5 items of the conversation, with color
+            >>> chatgpt.print_convo(0, 'json') # prints the entire conversation as a JSON string
+            >>> chatgpt.print_convo(mode='no-color') # prints the last 10 items of the conversation,
+                    without color or pygments markdown formatting
+        """
+        
         print('')
+
+        if not self.messages:
+            raise NoConversationsError()
+
         if mode in ['color', 'no-color']:
             convo = self._get_printed_convo(n, mode == 'color')
         elif mode == 'json':
             convo = self._get_json_convo(n)
             print(convo)
-            return
+            return convo if self._pytest_running else None
         else:
-            print_color('{BOLD_RED}Invalid mode: "' + mode + '"{RESET} -- options are "color", "no-color", and "json"')
-            return
+            raise InvalidConversationsTypeError(f'Invalid mode: "{mode}" -- options are "color", "no-color", and "json"')
         
         for role, content in convo:
             print(role)
             print(content)
         
+        return convo if self._pytest_running else None
+        
     
-    def save_convo(self, path: str, mode='no-color'):
+    def save_convo(self, path: str, mode='no-color') -> None:
+        """Saves conversation to path with specified color mode (see print_convo for details)"""
+        if not self.messages:
+            raise NoConversationsError()
+        
         if mode in ['color', 'no-color']:
             convo = self._get_printed_convo(0, mode == 'color')
         elif mode == 'json':
             convo = self._get_json_convo(0)
         else:
-            print_color('{BOLD_RED}Invalid mode: "' + mode + '"{RESET} -- options are "color", "no-color", and "json"')
-            return
+            raise InvalidConversationsTypeError(f'Invalid mode: "{mode}" -- options are "color", "no-color", and "json"')
         
         with open(path, 'w') as f:
             if mode == 'json':
@@ -249,14 +348,60 @@ class ChatGPT(Block):
                     f.write(role + '\n')
                     f.write(content + '\n')
             
-        print_color('{}Conversation saved to: {}{}{}'.format('{BOLD_GREEN}', '{BOLD_BLUE}', path, '{RESET}'))
+        print('Conversation saved to: ' + path)
+        return
                 
     
     @staticmethod
     def fromcli(args: list[str], stdin:TextIO=None) -> None:
+        """\
+        Helper method for one off conversations from the shell.
+        Conversation will not save to instance, and will not be saved to history.
+        Not ment to be called directly, but from a xonsh alias.
+            Alias 'chatgpt' is automatically registered when the xontrib is loaded.
+
+        Usage:
+            >>> chatgpt [text] # text will be sent to ChatGPT
+            >>> echo [text] | chatgpt # text from stdin will be sent to ChatGPT
+            >>> cat [text file] | chatgpt # text from file will be sent to ChatGPT
+        """
         inst = ChatGPT()
         inst(args, stdin)
         return None
+    
+    @staticmethod
+    def getdoc():
+        return """\
+        Allows for communication with ChatGPT from the xonsh shell.
+
+        This class can be assigned to a variable and used to have a continuous
+            conversation with ChatGPT.
+        Alternatively, an alias 'chatgpt' is automatically registered 
+            when the xontrib is loaded, which can be used to have one off conversations.
+        
+        Args:
+            alias (str, optional): Alias to use for the instance. Defaults to ''.
+        
+        Usage:
+            # With the pre-registered 'chatgpt' alias
+            >>> chatgpt [text] # text will be sent to ChatGPT
+            >>> echo [text] | chatgpt # text from stdin will be sent to ChatGPT
+
+            # With a ChatGPT instance and context manager
+            >>> chat = ChatGPT()
+            >>> with! chat:
+                    [text] # text will be sent to ChatGPT
+            
+            # With a ChatGPT instance and an alias
+            >>> chat = ChatGPT('chat')
+            >>> chat [text] # text will be sent to ChatGPT
+            >>> with! chat:
+                    [text] # text will be sent to ChatGPT
+        """
+
+#############
+
+
 
 chatenv = ChatEnv()
     
