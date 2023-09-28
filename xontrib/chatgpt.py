@@ -392,14 +392,14 @@ class ChatGPT(Block):
             >>> echo [text] | chatgpt # text from stdin will be sent to ChatGPT
 
             # With a ChatGPT instance and context manager
-            >>> chat = ChatGPT()
-            >>> with! chat:
+            >>> gpt = ChatGPT()
+            >>> with! gpt:
                     [text] # text will be sent to ChatGPT
             
             # With a ChatGPT instance and an alias
-            >>> chat = ChatGPT('chat')
-            >>> chat [text] # text will be sent to ChatGPT
-            >>> with! chat:
+            >>> gpt = ChatGPT('gpt')
+            >>> gpt [text] # text will be sent to ChatGPT
+            >>> with! gpt:
                     [text] # text will be sent to ChatGPT
         """
 

@@ -18,6 +18,20 @@ from xontrib.chatgpt import (
 # ChatGPT Class
 #############
 
+MARKDOWN_BLOCK = """\
+Hello!
+```python
+print('Hello World!')
+```
+"""
+
+MARKDOWN_BLOCK_2 = """\
+Sure here is a `Hello world` function:
+```python
+def hello_world():
+    print('Hello world!')
+```
+"""
 
 class DummyAI:
     def __init__(self):
@@ -42,12 +56,7 @@ def env_class(xession):
     xession.builtins.events.on_envvar_change(lambda_envhandler)
     xession.ctx["chat_env"] = env
     yield
-    del xession.ctx["chat_env"]
-    xession.builtins.events.on_envvar_change.remove(lambda_envhandler)
-    if "OPENAI_API_KEY" in xession.env:
-        del xession.env["OPENAI_API_KEY"]
-    if "OPENAI_CHAT_MODEL" in xession.env:
-        del xession.env["OPENAI_CHAT_MODEL"]
+
 
 @pytest.fixture(scope='module')
 def temp_home(tmpdir_factory):
@@ -130,13 +139,6 @@ def test_trim(xession, chat):
     assert len(chat._tokens) == 3
     assert len(chat.messages) == 0
 
-MARKDOWN_BLOCK = """\
-Hello!
-```python
-print('Hello World!')
-```
-"""
-
 def test__format_markdown(xession, chat):
     md = chat._format_markdown(MARKDOWN_BLOCK)
     assert '\x1b' in md
@@ -181,14 +183,6 @@ def test_print_convo_raises_invalid_convo_error(xession, chat):
     with pytest.raises(InvalidConversationsTypeError):
         chat.print_convo(0, mode='invalid')
 
-MARKDOWN_BLOCK_2 = """\
-Sure here is a `Hello world` function:
-```python
-def hello_world():
-    print('Hello world!')
-```
-"""
-
 @pytest.mark.parametrize(
     ('mode', 'file'),
     [
@@ -211,6 +205,16 @@ def test_saves_convo(xession, chat, temp_home, mode, file, monkeypatch):
         expected = f.read()
     assert res == expected
 
+def test_auto_create_alias(xession):
+    assert 'chat' not in xession.aliases
+    chat = ChatGPT('chat')
+    assert 'chat' in xession.aliases
+
+def test_auto_del_alias(xession):
+    chat = ChatGPT('chat')
+    assert 'chat' in xession.aliases
+    del chat
+    assert 'chat' not in xession.aliases
 
 def test_cli_execution(xession, chat_w_alias, capsys, monkeypatch_openai):
     xession.aliases['gpt'](['hello', 'my', 'name', 'is', 'user'])
@@ -223,6 +227,14 @@ def test_cli_execution_pipe(xession, chat_w_alias, capsys, monkeypatch_openai):
     stdin = io.StringIO()
     stdin.write('hello')
     xession.aliases['gpt']([], stdin=stdin)
+    out, err = capsys.readouterr()
+    out = out.strip().split('\n    ')
+    assert 'ChatGPT' in out[0]
+    assert 'test' in out[1]
+
+def test_enter_exit(xession, chat, capsys, monkeypatch_openai):
+    exe = xession.execer.exec
+    exe('with! chat:\n    hello', glbs={'chat': chat})
     out, err = capsys.readouterr()
     out = out.strip().split('\n    ')
     assert 'ChatGPT' in out[0]
