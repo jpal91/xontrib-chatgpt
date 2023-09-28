@@ -1,0 +1,9 @@
+user:
+    Please write me a hello world function
+ChatGPT:
+    Sure here is a `Hello world` function:
+    ```python
+    def hello_world():
+        print('Hello world!')
+    ```
+

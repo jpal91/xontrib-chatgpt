@@ -142,6 +142,7 @@ class ChatGPT(Block):
         self.messages: list[dict[str, str]] = []
         self._tokens: list = []
         self._max_tokens = 3000
+        self.chat_env: ChatEnv = XSH.ctx['chat_env']
 
         if self.alias:
             # Make sure the __del__ method is called despite the alias pointing to the instance
@@ -195,18 +196,18 @@ class ChatGPT(Block):
             ('Alias:', f'{self.alias or None}', '{BOLD_YELLOW}'),
             ('Tokens:', self.tokens, '{BOLD_GREEN}'),
             ('Trim After:', f'{self._max_tokens} Tokens', '{BOLD_BLUE}'),
-            ('Mode:', chatenv.OPENAI_CHAT_MODEL, '{BOLD_BLUE}'),
+            ('Mode:', self.chat_env.OPENAI_CHAT_MODEL, '{BOLD_BLUE}'),
             ('Messages:', len(self.messages), '{BOLD_BLUE}'),
         ]
         return stats
     
     def chat(self, text):
         """Main chat function for interfacing with OpenAI API"""
-        api_key = chatenv.OPENAI_API_KEY
+        api_key = self.chat_env.OPENAI_API_KEY
         if not api_key:
             raise NoApiKeyError()
         
-        model = chatenv.OPENAI_CHAT_MODEL
+        model = self.chat_env.OPENAI_CHAT_MODEL
         choices = ['gpt-3.5-turbo', 'gpt-4']
         if model not in choices:
             raise UnsupportedModelError(f'Unsupported model: {model} - options are {choices}')
@@ -221,7 +222,7 @@ class ChatGPT(Block):
             messages=self.base + self.messages,
         )
 
-        res_text = response['choices'][0].message
+        res_text = response['choices'][0]['message']
         tokens = response['usage']['total_tokens']
 
         self.messages.append(res_text)
@@ -351,7 +352,7 @@ class ChatGPT(Block):
                     f.write(role + '\n')
                     f.write(content + '\n')
             
-        print('Conversation saved to: ' + path)
+        print('Conversation saved to: ' + str(path))
         return
                 
     
@@ -413,7 +414,7 @@ def _load_xontrib_(xsh: XonshSession, **_):
     xsh.aliases['chatgpt'] = lambda args, stdin=None: ChatGPT.fromcli(args, stdin)
     xsh.builtins.events.on_envvar_change(lambda_env_change)
 
-    return {'ChatGPT': ChatGPT}
+    return {'ChatGPT': ChatGPT, 'chat_env': chatenv}
 
 def _unload_xontrib_(xsh: XonshSession, **_):
     del XSH.aliases['chatgpt']

@@ -1,0 +1,10 @@
+[
+    {
+        "role": "user",
+        "content": "Please write me a hello world function"
+    },
+    {
+        "role": "assistant",
+        "content": "Sure here is a `Hello world` function:\n```python\ndef hello_world():\n    print('Hello world!')\n```\n"
+    }
+]

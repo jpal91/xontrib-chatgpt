@@ -1,11 +1,12 @@
 import pytest
 from xontrib.chatgpt import (
     ChatEnv,
-    env_handler
+    env_handler,
 )
 
-def test_it_loads(load_xontrib):
+def test_it_loads(load_xontrib, xession):
     load_xontrib("chatgpt")
+    assert "chatgpt" in xession.aliases
 
 #############
 # Env Handlers
@@ -53,6 +54,5 @@ def test_env_handler_updates_on_fire(xession, reset_env):
 #############
 
 
-#############
-# ChatGPT Class
-#############
+
+
