@@ -205,3 +205,23 @@ def test_saves_convo(xession, chat, temp_home, mode, file, monkeypatch):
     with open(temp_home / 'expected' / file, 'r') as f:
         expected = f.read()
     assert res == expected
+
+@pytest.mark.parametrize(
+    ('type', 'cmd'),
+    [
+        # ('context', "with! chat:\n   Hello I am a user"),
+        # ('callable_py', "chat('Hello I am a user')"),
+        ('callable_xonsh', "gpt 'Hello I am a user'"),
+        ('pipeable', "echo 'Hello I am a user' | gpt"),
+    ]
+)
+def test_cli_execution(xession, chat, type, cmd, capsys, monkeypatch_openai):
+    gpt = lambda args, stdin=None: chat(args, stdin=stdin)
+    execer = xession.execer.eval
+    # assert callable(xession.aliases['gpt'])
+    execer(cmd, glbs={'gpt': gpt}, locs={'gpt': gpt})
+    out, err = capsys.readouterr()
+    out = out.strip().split('\n    ')
+    assert 'ChatGPT' in out[0]
+    assert 'test' in out[1]
+    # del xession.aliases['gpt']
