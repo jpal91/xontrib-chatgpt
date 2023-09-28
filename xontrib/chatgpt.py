@@ -1,5 +1,6 @@
 import os
 import re
+import inspect
 import json
 import weakref
 from collections import namedtuple
@@ -174,7 +175,7 @@ class ChatGPT(Block):
     
     def __str__(self):
         stats = self._stats()
-        return '\n'.join([f'{k}: {v}' for k,v,_ in stats])
+        return '\n'.join([f'{k} {v}' for k,v,_ in stats])
     
     def __repr__(self):
         return f'ChatGPT(alias={self.alias or None})'
@@ -401,6 +402,11 @@ class ChatGPT(Block):
             >>> gpt [text] # text will be sent to ChatGPT
             >>> with! gpt:
                     [text] # text will be sent to ChatGPT
+            
+            # Get Help
+            >>> chatgpt? # With default alias
+            >>> gpt = ChatGPT()
+            >>> gpt?
         """
 
 #############
@@ -412,10 +418,12 @@ lambda_env_change = lambda name, oldvalue, newvalue, **_: env_handler(name, oldv
     
 def _load_xontrib_(xsh: XonshSession, **_):
     xsh.aliases['chatgpt'] = lambda args, stdin=None: ChatGPT.fromcli(args, stdin)
+    xsh.aliases['chatgpt?'] = lambda *_, **__: xsh.help(ChatGPT)
     xsh.builtins.events.on_envvar_change(lambda_env_change)
 
     return {'ChatGPT': ChatGPT, 'chat_env': chatenv}
 
 def _unload_xontrib_(xsh: XonshSession, **_):
-    del XSH.aliases['chatgpt']
+    del xsh.aliases['chatgpt']
+    del xsh.aliases['chatgpt?']
     xsh.builtins.events.on_envvar_change.remove(lambda_env_change)
