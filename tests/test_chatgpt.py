@@ -2,13 +2,10 @@ import io
 import json
 import shutil
 import pytest
-from xonsh.tools import indent
 from xontrib.chatgpt import (
     ChatGPT,
     NoApiKeyError,
     UnsupportedModelError,
-    ChatEnv,
-    env_handler,
     NoConversationsError,
     InvalidConversationsTypeError
 )
@@ -44,20 +41,6 @@ class DummyAI:
         }
 
 
-@pytest.fixture(autouse=True)
-def env_class(xession):
-    env = ChatEnv()
-    lambda_envhandler = lambda name, oldvalue, newvalue, **_: env_handler(
-        name, oldvalue, newvalue, env
-    )
-    xession.env["OPENAI_API_KEY"] = "dummy"
-    env.OPENAI_API_KEY = "dummy"
-    xession.env["OPENAI_CHAT_MODEL"] = "gpt-3.5-turbo"
-    xession.builtins.events.on_envvar_change(lambda_envhandler)
-    xession.ctx["chat_env"] = env
-    yield
-
-
 @pytest.fixture(scope='module')
 def temp_home(tmpdir_factory):
     home = tmpdir_factory.mktemp('home')
@@ -83,6 +66,10 @@ def chat_w_alias(xession):
     chat = ChatGPT('gpt')
     yield chat
     del chat
+
+def test_it_loads(load_xontrib, xession):
+    load_xontrib("chatgpt")
+    assert "chatgpt" in xession.aliases
 
 def test_alias_creation(xession):
     assert "chat" not in xession.aliases
@@ -114,12 +101,14 @@ def test_chat_raises_error_with_no_api_key(xession, chat):
 
 
 def test_chat_raises_error_with_no_chat_model(xession, chat):
+    xession.env["OPENAI_API_KEY"] = "test"
     xession.env["OPENAI_CHAT_MODEL"] = "test"
     with pytest.raises(UnsupportedModelError):
         chat.chat("test")
 
 
 def test_chat_response(xession, monkeypatch_openai, chat):
+    xession.env["OPENAI_API_KEY"] = "test"
     chat.chat("test") == "test"
     assert chat.messages == [
         {"role": "user", "content": "test"},
@@ -217,6 +206,7 @@ def test_auto_del_alias(xession):
     assert 'chat' not in xession.aliases
 
 def test_cli_execution(xession, chat_w_alias, capsys, monkeypatch_openai):
+    xession.env["OPENAI_API_KEY"] = "test"
     xession.aliases['gpt'](['hello', 'my', 'name', 'is', 'user'])
     out, err = capsys.readouterr()
     out = out.strip().split('\n    ')
@@ -224,6 +214,7 @@ def test_cli_execution(xession, chat_w_alias, capsys, monkeypatch_openai):
     assert 'test' in out[1]
     
 def test_cli_execution_pipe(xession, chat_w_alias, capsys, monkeypatch_openai):
+    xession.env["OPENAI_API_KEY"] = "test"
     stdin = io.StringIO()
     stdin.write('hello')
     xession.aliases['gpt']([], stdin=stdin)
@@ -233,6 +224,7 @@ def test_cli_execution_pipe(xession, chat_w_alias, capsys, monkeypatch_openai):
     assert 'test' in out[1]
 
 def test_enter_exit(xession, chat, capsys, monkeypatch_openai):
+    xession.env["OPENAI_API_KEY"] = "test"
     exe = xession.execer.exec
     exe('with! chat:\n    hello', glbs={'chat': chat})
     out, err = capsys.readouterr()

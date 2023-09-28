@@ -1,16 +1,15 @@
 import os
 import re
-import inspect
 import json
 import weakref
 from collections import namedtuple
-from dataclasses import dataclass
 from typing import TextIO, Union, Optional
 from xonsh.built_ins import XSH, XonshSession
 from xonsh.tools import print_color, indent
 from xonsh.contexts import Block
 from xonsh.lazyasd import lazyobject
 from xonsh.ansi_colors import ansi_partial_color_format
+
 
 __all__ = ()
 
@@ -97,27 +96,6 @@ class InvalidConversationsTypeError(Exception):
 #############
 
 
-#############
-# Env Handlers
-#############
-@dataclass
-class ChatEnv:
-    """Helper class to improve efficiency in getting env variables"""
-
-    OPENAI_CHAT_MODEL: str | None = XSH.env.get('OPENAI_CHAT_MODEL', 'gpt-3.5-turbo')
-    OPENAI_API_KEY: str | None = XSH.env.get('OPENAI_API_KEY', None)
-
-    def __contains__(self, key):
-        return key in vars(self)
-
-def env_handler(name: str, oldvalue: str, newvalue: str, chat_env: ChatEnv, **_):
-    """Env change event handler, updates local env state"""
-
-    if name in chat_env:
-        setattr(chat_env, name, newvalue)
-
-#############
-
 
 #############
 # ChatGPT Class
@@ -143,7 +121,6 @@ class ChatGPT(Block):
         self.messages: list[dict[str, str]] = []
         self._tokens: list = []
         self._max_tokens = 3000
-        self.chat_env: ChatEnv = XSH.ctx['chat_env']
 
         if self.alias:
             # Make sure the __del__ method is called despite the alias pointing to the instance
@@ -204,19 +181,19 @@ class ChatGPT(Block):
     
     def chat(self, text):
         """Main chat function for interfacing with OpenAI API"""
-        api_key = self.chat_env.OPENAI_API_KEY
-        if not api_key:
-            raise NoApiKeyError()
-        
-        model = self.chat_env.OPENAI_CHAT_MODEL
+
+        model = XSH.env.get('OPENAI_CHAT_MODEL', 'gpt-3.5-turbo')
         choices = ['gpt-3.5-turbo', 'gpt-4']
         if model not in choices:
             raise UnsupportedModelError(f'Unsupported model: {model} - options are {choices}')
-        
-        self.messages.append({"role": "user", "content": text})
 
         if not openai.api_key:
+            api_key = XSH.env.get('OPENAI_API_KEY', None)
+            if not api_key:
+                raise NoApiKeyError()
             openai.api_key = api_key
+        
+        self.messages.append({"role": "user", "content": text})
 
         response = openai.ChatCompletion.create(
             model=model,
@@ -412,18 +389,13 @@ class ChatGPT(Block):
 #############
 
 
-
-chatenv = ChatEnv()
-lambda_env_change = lambda name, oldvalue, newvalue, **_: env_handler(name, oldvalue, newvalue, chatenv)
     
 def _load_xontrib_(xsh: XonshSession, **_):
     xsh.aliases['chatgpt'] = lambda args, stdin=None: ChatGPT.fromcli(args, stdin)
     xsh.aliases['chatgpt?'] = lambda *_, **__: xsh.help(ChatGPT)
-    xsh.builtins.events.on_envvar_change(lambda_env_change)
 
-    return {'ChatGPT': ChatGPT, 'chat_env': chatenv}
+    return {'ChatGPT': ChatGPT }
 
 def _unload_xontrib_(xsh: XonshSession, **_):
     del xsh.aliases['chatgpt']
     del xsh.aliases['chatgpt?']
-    xsh.builtins.events.on_envvar_change.remove(lambda_env_change)
