@@ -171,6 +171,7 @@ class ChatGPT(Block):
             print_color('{}{}{} {}'.format(c, k, '{BOLD_WHITE}', v))
     
     def _stats(self) -> str:
+        """Helper for stats and __str__"""
         stats = [
             ('Alias:', f'{self.alias or None}', '{BOLD_YELLOW}'),
             ('Tokens:', self.tokens, '{BOLD_GREEN}'),
