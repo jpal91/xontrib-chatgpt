@@ -1,4 +1,4 @@
-import os
+import io
 import json
 import shutil
 import pytest
@@ -69,6 +69,11 @@ def monkeypatch_openai(monkeypatch):
 def chat(xession):
     return ChatGPT()
 
+@pytest.fixture
+def chat_w_alias(xession):
+    chat = ChatGPT('gpt')
+    yield chat
+    del chat
 
 def test_alias_creation(xession):
     assert "chat" not in xession.aliases
@@ -206,22 +211,19 @@ def test_saves_convo(xession, chat, temp_home, mode, file, monkeypatch):
         expected = f.read()
     assert res == expected
 
-@pytest.mark.parametrize(
-    ('type', 'cmd'),
-    [
-        # ('context', "with! chat:\n   Hello I am a user"),
-        # ('callable_py', "chat('Hello I am a user')"),
-        ('callable_xonsh', "gpt 'Hello I am a user'"),
-        ('pipeable', "echo 'Hello I am a user' | gpt"),
-    ]
-)
-def test_cli_execution(xession, chat, type, cmd, capsys, monkeypatch_openai):
-    gpt = lambda args, stdin=None: chat(args, stdin=stdin)
-    execer = xession.execer.eval
-    # assert callable(xession.aliases['gpt'])
-    execer(cmd, glbs={'gpt': gpt}, locs={'gpt': gpt})
+
+def test_cli_execution(xession, chat_w_alias, capsys, monkeypatch_openai):
+    xession.aliases['gpt'](['hello', 'my', 'name', 'is', 'user'])
     out, err = capsys.readouterr()
     out = out.strip().split('\n    ')
     assert 'ChatGPT' in out[0]
     assert 'test' in out[1]
-    # del xession.aliases['gpt']
+    
+def test_cli_execution_pipe(xession, chat_w_alias, capsys, monkeypatch_openai):
+    stdin = io.StringIO()
+    stdin.write('hello')
+    xession.aliases['gpt']([], stdin=stdin)
+    out, err = capsys.readouterr()
+    out = out.strip().split('\n    ')
+    assert 'ChatGPT' in out[0]
+    assert 'test' in out[1]
