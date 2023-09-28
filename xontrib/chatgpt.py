@@ -1,3 +1,4 @@
+"""Main chatgpt xontrib"""
 import os
 import re
 import json
@@ -19,19 +20,18 @@ __all__ = ()
 #############
 @lazyobject
 def openai():
+    """Imports openai"""
     import openai
     return openai
 
 @lazyobject
-def CODE_BLOCK():
-    return re.compile(r'```(.*?)\n(.*?)```', re.DOTALL)
-
-@lazyobject
 def MULTI_LINE_CODE():
+    """Regex to remove multiline code blocks (```code```) from markdown"""
     return re.compile(r'```.*?\n', re.DOTALL)
 
 @lazyobject
 def SINGLE_LINE_CODE():
+    """Regex to remove single line code blocks (`code`) from markdown"""
     return re.compile(r'`(.*?)`')
 
 @lazyobject
@@ -48,6 +48,7 @@ def PYGMENTS():
 
 @lazyobject
 def markdown():
+    """Formats markdown text using pygments"""
     from pygments import highlight
     from pygments.lexers.markup import MarkdownLexer
     from pygments.formatters import Terminal256Formatter
@@ -217,18 +218,6 @@ class ChatGPT(Block):
         while tokens > self._max_tokens:
             self.messages.pop(0)
             tokens -= self._tokens.pop(0)
-    
-    def _handle_code_block(self, match: re.Match) -> str:
-        """Matches any code block in the string, strips each of the leading/following "`"s, 
-            and uses pygments to highlight
-        """
-        if match.group(1) and match.group(1) not in ['python', 'py']:
-            lexer = PYGMENTS.get_lexer_by_name(match.group(1))
-        else:
-            lexer = PYGMENTS.PythonLexer()
-        
-        return PYGMENTS.highlight(match.group(2), lexer, PYGMENTS.Terminal256Formatter(style=PYGMENTS.GhDarkStyle))
-        
     
     def _print_res(self, res: str) -> Optional[str]:        
         """Called after receiving response from ChatGPT, prints the response to the shell"""
