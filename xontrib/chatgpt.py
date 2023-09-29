@@ -1,7 +1,9 @@
 """chatgpt xontrib"""
+import os
 import re
 import json
 import weakref
+from datetime import datetime
 from collections import namedtuple
 from typing import TextIO
 from xonsh.built_ins import XSH, XonshSession
@@ -207,7 +209,21 @@ class ChatGPT(Block):
         return stats
 
     def chat(self, text: str) -> str:
-        """Main chat function for interfacing with OpenAI API"""
+        """
+        Main chat function for interfacing with OpenAI API
+        
+        This method is not meant to be called directly as calling the 
+            instance will call this method and print to the cli.
+        However, it is avaliable and can be useful for assigning 
+            the response to a variable.
+        
+        Args:
+            text (str): Text to send to ChatGPT
+        
+        Returns:
+            str: Response from ChatGPT
+
+        """
 
         model = XSH.env.get("OPENAI_CHAT_MODEL", "gpt-3.5-turbo")
         choices = ["gpt-3.5-turbo", "gpt-4"]
@@ -332,11 +348,47 @@ class ChatGPT(Block):
             print(content)
 
         return
+    
+    def _get_default_path(self, name: str = '', json_mode:bool=False) -> str:
+        """Helper method to get the default path for saving conversations"""
+        user = XSH.env.get("USER", "user")
+        data_dir = XSH.env.get("XONSH_DATA_DIR", os.path.join(os.path.expanduser("~"), ".local", "share", "xonsh"))
+        chat_dir = os.path.join(data_dir, "chatgpt")
 
-    def save_convo(self, path: str, mode: str = "no-color") -> None:
-        """Saves conversation to path with specified color mode (see print_convo for details)"""
+        if not os.path.exists(chat_dir):
+            os.makedirs(chat_dir)
+        
+        date, idx = datetime.now().strftime("%Y-%m-%d"), 1
+        path_prefix, ext = os.path.join(chat_dir, f"{user}_{name or self.alias or 'chatgpt'}_{date}"), ".json" if json_mode else ".txt"
+        
+        if os.path.exists(f'{path_prefix}{ext}'):
+            while os.path.exists(path_prefix + f"_{idx}{ext}"):
+                idx += 1
+            path = path_prefix + f"_{idx}{ext}"
+        else:
+            path = path_prefix + f"{ext}"
+        
+        return path
+
+    def save_convo(self, path: str = '', name: str = '', mode: str = "no-color") -> None:
+        """
+        Saves conversation to path or default xonsh data directory
+        
+        Args:
+            path (str, optional): Path to save conversation to. Defaults to ''.
+            name (str, optional): Name to use in the filename. Defaults to ''.
+            mode (str, optional): Mode to save in. Defaults to 'no-color'. Options - 'color', 'no-color', 'json'
+
+            When path is specified, name will be ignored.
+        
+        Default File Path Structure:
+            $XONSH_DATA_DIR/chatgpt/$USER_[name|alias|'chatgpt']_[date]_[index].[text|json]
+        """
         if not self.messages:
             raise NoConversationsError()
+        
+        if not path:
+            path = self._get_default_path(name=name, json_mode=mode == "json")
 
         if mode in ["color", "no-color"]:
             convo = self._get_printed_convo(0, mode == "color")
@@ -408,6 +460,11 @@ class ChatGPT(Block):
             >>> chatgpt? # With default alias
             >>> gpt = ChatGPT()
             >>> gpt?
+            >>> gpt.print_convo?
+        
+        Methods:
+            print_convo - Prints the current conversation to the shell
+            save_convo - Saves the current conversation to a file
         """
 
 
