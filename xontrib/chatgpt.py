@@ -465,6 +465,12 @@ class ChatGPT(Block):
         Methods:
             print_convo - Prints the current conversation to the shell
             save_convo - Saves the current conversation to a file
+        
+        Envs:
+            $OPENAI_API_KEY - OpenAI API Key (REQUIRED)
+            $OPENAI_CHAT_MODEL - OpenAI Chat Model
+                Default: gpt-3.5-turbo
+                Supported: gpt-3.5-turbo, gpt-4
         """
 
 
