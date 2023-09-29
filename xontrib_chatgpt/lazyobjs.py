@@ -11,19 +11,17 @@ def _openai():
 
     return openai
 
-
-
 def _MULTI_LINE_CODE():
     """Regex to remove multiline code blocks (```code```) from markdown"""
     return re.compile(r"```.*?\n", re.DOTALL)
-
-
 
 def _SINGLE_LINE_CODE():
     """Regex to remove single line code blocks (`code`) from markdown"""
     return re.compile(r"`(.*?)`")
 
-
+def _CHAT_REGEX():
+    """Regex to convert saved chats back into a list of messages"""
+    return re.compile(r'\n?(.+?):\n(.+?)(?=\n.+?|$)', re.DOTALL)
 
 def _PYGMENTS():
     """Lazy loading of pygments to avoid slowing down shell startup"""
@@ -46,8 +44,6 @@ def _PYGMENTS():
     return container(
         highlight, get_lexer_by_name, PythonLexer, Terminal256Formatter, GhDarkStyle
     )
-
-
 
 def _markdown():
     """Formats markdown text using pygments"""
