@@ -10,6 +10,7 @@ from xonsh.contexts import Block
 from xonsh.lazyasd import LazyObject
 from xonsh.ansi_colors import ansi_partial_color_format
 
+from xontrib_chatgpt.args import parse
 from xontrib_chatgpt.lazyobjs import(
     _openai,
     _MULTI_LINE_CODE,
@@ -29,6 +30,7 @@ MULTI_LINE_CODE = LazyObject(_MULTI_LINE_CODE, globals(), "MULTI_LINE_CODE")
 SINGLE_LINE_CODE = LazyObject(_SINGLE_LINE_CODE, globals(), "SINGLE_LINE_CODE")
 PYGMENTS = LazyObject(_PYGMENTS, globals(), "PYGMENTS")
 markdown = LazyObject(_markdown, globals(), "markdown")
+# parse = LazyObject(_parse, globals(), "parse")
 
 DOCSTRING = """\
 Allows for communication with ChatGPT from the xonsh shell.
@@ -60,8 +62,12 @@ Usage:
     # Get Help
     >>> chatgpt? # With default alias
     >>> gpt = ChatGPT()
+    # Instance related help / docstrings / src
     >>> gpt?
     >>> gpt.print_convo?
+    # CLI/Alias related help
+    >>> gpt -h
+    >>> chatgpt -h
 
 Methods:
     print_convo - Prints the current conversation to the shell
@@ -117,13 +123,21 @@ class ChatGPT(Block):
 
     def __call__(self, args: list[str], stdin: TextIO = None):
         if args:
-            res = self.chat(" ".join(args))
+            # res = self.chat(" ".join(args))
+            pargs = parse(args)
         elif stdin:
-            res = self.chat(stdin.read().strip())
+            # res = self.chat(stdin.read().strip())
+            pargs = parse(stdin.read().strip())
         else:
             return
-
-        self._print_res(res)
+        
+        if pargs.cmd == 'send':
+            res = self.chat(" ".join(pargs.text))
+            self._print_res(res)
+        elif pargs.cmd == 'print':
+            self.print_convo(pargs.n, pargs.mode)
+        elif pargs.cmd == 'save':
+            self.save_convo(pargs.path, pargs.name, pargs.mode)
 
     def __del__(self):
         if self.alias and self.alias in XSH.aliases:
@@ -265,7 +279,7 @@ class ChatGPT(Block):
 
         return convo
 
-    def print_convo(self, n: int = 10, mode: str = "color") -> None:
+    def print_convo(self, n: int = 10, mode: str = "color") -> str:
         """Prints the current conversation to shell, up to n last items, in the specified mode
 
         Args:
@@ -279,27 +293,26 @@ class ChatGPT(Block):
                     without color or pygments markdown formatting
         """
 
-        print("")
+        # print("")
+        rtn_str = '\n'
 
         if not self.messages:
             raise NoConversationsError()
 
         if mode in ["color", "no-color"]:
             convo = self._get_printed_convo(n, mode == "color")
+            for role, content in convo:
+                rtn_str += role + "\n"
+                rtn_str += content + "\n"
         elif mode == "json":
             convo = self._get_json_convo(n)
-            print(convo)
-            return
+            rtn_str += convo
         else:
             raise InvalidConversationsTypeError(
                 f'Invalid mode: "{mode}" -- options are "color", "no-color", and "json"'
             )
-
-        for role, content in convo:
-            print(role)
-            print(content)
-
-        return
+        print(rtn_str)
+        # return rtn_str
     
     def _get_default_path(self, name: str = '', json_mode:bool=False) -> str:
         """Helper method to get the default path for saving conversations"""

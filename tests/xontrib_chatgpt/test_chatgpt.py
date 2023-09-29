@@ -260,6 +260,24 @@ def test_cli_execution(xession, chat_w_alias, capsys, monkeypatch_openai):
     assert "ChatGPT" in out[0]
     assert "test" in out[1]
 
+def test_cli_execution_print(xession, chat_w_alias, capsys, monkeypatch, monkeypatch_openai):
+    monkeypatch.setattr("xontrib_chatgpt.chatgpt.ChatGPT.print_convo", lambda _, n, mode: print('print_convo', n, mode))
+    xession.aliases["gpt"](["-p"])
+    out, err = capsys.readouterr()
+    assert out.strip() == 'print_convo 10 color'
+    xession.aliases["gpt"]("-p -n 5 -m no-color")
+    out, err = capsys.readouterr()
+    assert out.strip() == 'print_convo 5 no-color'
+
+def test_cli_execution_save(xession, chat_w_alias, capsys, monkeypatch, monkeypatch_openai):
+    monkeypatch.setattr("xontrib_chatgpt.chatgpt.ChatGPT.save_convo", lambda _, path, name, mode: print('save_convo', path, name, mode))
+    xession.aliases["gpt"](["-s"])
+    out, err = capsys.readouterr()
+    assert out.strip() == 'save_convo   color'
+    xession.aliases["gpt"]("-s -P path -n 5 -m no-color --name name")
+    out, err = capsys.readouterr()
+    assert out.strip() == 'save_convo path name no-color'
+
 
 def test_cli_execution_pipe(xession, chat_w_alias, capsys, monkeypatch_openai):
     xession.env["OPENAI_API_KEY"] = "test"
