@@ -36,7 +36,7 @@ Allows for communication with ChatGPT from the xonsh shell.
 This class can be assigned to a variable and used to have a continuous
     conversation with ChatGPT.
 Alternatively, an alias 'chatgpt' is automatically registered 
-    when the xontrib is loaded, which can be used to have one off conversations.
+    when the xontrib is loaded, which can be used to have one-off conversations.
 
 Args:
     alias (str, optional): Alias to use for the instance. Defaults to ''.
@@ -72,6 +72,10 @@ Envs:
     $OPENAI_CHAT_MODEL - OpenAI Chat Model
         Default: gpt-3.5-turbo
         Supported: gpt-3.5-turbo, gpt-4
+
+Default Commands/Aliases:
+    chatgpt - Alias for ChatGPT.fromcli
+    chatgpt? - Alias for xonsh help ChatGPT
 
 """
 
