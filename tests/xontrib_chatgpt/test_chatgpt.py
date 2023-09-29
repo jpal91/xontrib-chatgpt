@@ -3,18 +3,14 @@ import json
 import shutil
 import pytest
 from datetime import datetime
-from xontrib.chatgpt import (
-    ChatGPT,
+from xontrib.chatgpt import ChatGPT
+from xontrib_chatgpt.exceptions import (
     NoApiKeyError,
     UnsupportedModelError,
     NoConversationsError,
     InvalidConversationsTypeError,
 )
 
-
-#############
-# ChatGPT Class
-#############
 
 MARKDOWN_BLOCK = """\
 Hello!
@@ -59,7 +55,7 @@ def temp_home(tmpdir_factory):
 def monkeypatch_openai(monkeypatch):
     dummy_ai = DummyAI()
     dummy_ai.ChatCompletion = DummyAI()
-    monkeypatch.setattr("xontrib.chatgpt.openai", dummy_ai)
+    monkeypatch.setattr("xontrib_chatgpt.chatgpt.openai", dummy_ai)
 
 
 @pytest.fixture
