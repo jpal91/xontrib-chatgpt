@@ -82,6 +82,7 @@ Envs:
 Default Commands/Aliases:
     chatgpt - Alias for ChatGPT.fromcli
     chatgpt? - Alias for xonsh help ChatGPT
+    chatgpt -h - Command for CLI help
 
 """
 
