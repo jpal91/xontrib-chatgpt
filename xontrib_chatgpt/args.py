@@ -1,25 +1,4 @@
-from argparse import ArgumentParser, Namespace
-
-# def parse(args: str):
-#     args = args.split()
-#     cmd_parser = ArgumentParser(exit_on_error=False)
-#     cmd_parser.set_defaults(cmd='send')
-#     cmd_parser.add_argument('-f', nargs='?', default=None)
-#     cmd_parser.add
-#     if args[0] not in ['update', 'print', '-h', '--help']:
-#         # return Namespace(cmd='send', message=args)
-#         cmd_parser.add_argument('message', nargs='*', default=None)
-#         return cmd_parser.parse_args(args)
-
-#     # cmd_parser = ArgumentParser(exit_on_error=False)
-#     subparsers = cmd_parser.add_subparsers(dest='cmd', required=False)
-#     sub_up = subparsers.add_parser('update')
-#     sub_up.add_argument('-v', '--verbose', action='store_true')
-#     sub_print = subparsers.add_parser('print')
-#     sub_print.add_argument('-c', '--color', action='store_true')
-#     cmd_parser.add_argument('text', nargs='*', default=None)
-    
-#     return cmd_parser.parse_args(args)
+from argparse import ArgumentParser
 
 def _parse():
     cmd_parser = ArgumentParser(prog='chatgpt', description='Chat with OpenAI\'s ChatGPT from the command line')

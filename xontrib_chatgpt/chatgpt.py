@@ -123,10 +123,8 @@ class ChatGPT(Block):
 
     def __call__(self, args: list[str], stdin: TextIO = None):
         if args:
-            # res = self.chat(" ".join(args))
             pargs = parse.parse_args(args)
         elif stdin:
-            # res = self.chat(stdin.read().strip())
             pargs = parse.parse_args(stdin.read().strip().split())
         else:
             return
@@ -293,7 +291,6 @@ class ChatGPT(Block):
                     without color or pygments markdown formatting
         """
 
-        # print("")
         rtn_str = '\n'
 
         if not self.messages:
@@ -312,7 +309,6 @@ class ChatGPT(Block):
                 f'Invalid mode: "{mode}" -- options are "color", "no-color", and "json"'
             )
         print(rtn_str)
-        # return rtn_str
     
     def _get_default_path(self, name: str = '', json_mode:bool=False) -> str:
         """Helper method to get the default path for saving conversations"""
