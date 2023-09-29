@@ -21,10 +21,7 @@ from argparse import ArgumentParser, Namespace
     
 #     return cmd_parser.parse_args(args)
 
-def parse(args: str) -> Namespace:
-    if isinstance(args, str):
-        args = args.split()
-
+def _parse():
     cmd_parser = ArgumentParser(prog='chatgpt', description='Chat with OpenAI\'s ChatGPT from the command line')
     cmd_parser.set_defaults(cmd='send')
     p_group = cmd_parser.add_argument_group(title='Print')
@@ -38,7 +35,7 @@ def parse(args: str) -> Namespace:
     ps_group.add_argument('-m', '--mode', type=str, default='color', choices=['color', 'no-color', 'json'], help='Mode to print or save the conversation. Default is color')
     cmd_parser.add_argument('text', nargs='*', default=None, help='Text to send to ChatGPT. Will be ignored when other cmd is used')
 
-    return cmd_parser.parse_args(args)
+    return cmd_parser
 
 if __name__ == '__main__':
-    print(parse('-p -s'))
+    print(_parse('-p -s'))

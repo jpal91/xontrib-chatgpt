@@ -10,7 +10,7 @@ from xonsh.contexts import Block
 from xonsh.lazyasd import LazyObject
 from xonsh.ansi_colors import ansi_partial_color_format
 
-from xontrib_chatgpt.args import parse
+from xontrib_chatgpt.args import _parse
 from xontrib_chatgpt.lazyobjs import(
     _openai,
     _MULTI_LINE_CODE,
@@ -30,7 +30,7 @@ MULTI_LINE_CODE = LazyObject(_MULTI_LINE_CODE, globals(), "MULTI_LINE_CODE")
 SINGLE_LINE_CODE = LazyObject(_SINGLE_LINE_CODE, globals(), "SINGLE_LINE_CODE")
 PYGMENTS = LazyObject(_PYGMENTS, globals(), "PYGMENTS")
 markdown = LazyObject(_markdown, globals(), "markdown")
-# parse = LazyObject(_parse, globals(), "parse")
+parse = LazyObject(_parse, globals(), "parse")
 
 DOCSTRING = """\
 Allows for communication with ChatGPT from the xonsh shell.
@@ -124,10 +124,10 @@ class ChatGPT(Block):
     def __call__(self, args: list[str], stdin: TextIO = None):
         if args:
             # res = self.chat(" ".join(args))
-            pargs = parse(args)
+            pargs = parse.parse_args(args)
         elif stdin:
             # res = self.chat(stdin.read().strip())
-            pargs = parse(stdin.read().strip())
+            pargs = parse.parse_args(stdin.read().strip().split())
         else:
             return
         

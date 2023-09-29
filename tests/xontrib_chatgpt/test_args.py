@@ -1,7 +1,11 @@
 import pytest
 from argparse import Namespace
 
-from xontrib_chatgpt.args import parse
+from xontrib_chatgpt.args import _parse
+
+@pytest.fixture(scope='module')
+def argparse():
+    return _parse()
 
 @pytest.fixture
 def default_namespace_dict():
@@ -29,8 +33,8 @@ def default_namespace_dict():
         ('-P path -s --name name -m color -n 10 something else', {'cmd': 'save', 'text': ['something', 'else'], 'path': 'path', 'name': 'name', 'mode': 'color', 'n': 10}),
     ]
 )
-def test_parse_args(xession, args, expected, default_namespace_dict):
+def test_parse_args(xession, argparse, args, expected, default_namespace_dict):
     new_dict = { **default_namespace_dict, **expected }
     expected = Namespace(**new_dict)
-    assert parse(args) == expected
+    assert argparse.parse_args(args.split()) == expected
     

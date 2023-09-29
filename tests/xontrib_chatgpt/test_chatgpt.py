@@ -265,7 +265,7 @@ def test_cli_execution_print(xession, chat_w_alias, capsys, monkeypatch, monkeyp
     xession.aliases["gpt"](["-p"])
     out, err = capsys.readouterr()
     assert out.strip() == 'print_convo 10 color'
-    xession.aliases["gpt"]("-p -n 5 -m no-color")
+    xession.aliases["gpt"]("-p -n 5 -m no-color".split())
     out, err = capsys.readouterr()
     assert out.strip() == 'print_convo 5 no-color'
 
@@ -274,7 +274,7 @@ def test_cli_execution_save(xession, chat_w_alias, capsys, monkeypatch, monkeypa
     xession.aliases["gpt"](["-s"])
     out, err = capsys.readouterr()
     assert out.strip() == 'save_convo   color'
-    xession.aliases["gpt"]("-s -P path -n 5 -m no-color --name name")
+    xession.aliases["gpt"]("-s -P path -n 5 -m no-color --name name".split())
     out, err = capsys.readouterr()
     assert out.strip() == 'save_convo path name no-color'
 
