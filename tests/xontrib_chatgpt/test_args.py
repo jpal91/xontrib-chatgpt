@@ -13,6 +13,7 @@ def default_namespace_dict():
         'cmd': 'send',
         'text': [],
         'mode': 'color',
+        'type': 'text',
         'name': '',
         'path': '',
         'n': 10
@@ -31,6 +32,9 @@ def default_namespace_dict():
         ('-P path -s --name name -m json', {'cmd': 'save', 'text': [], 'path': 'path', 'name': 'name', 'mode': 'json'}),
         ('-P path -s --name name -m no-color -n 5', {'cmd': 'save', 'text': [], 'path': 'path', 'name': 'name', 'mode': 'no-color', 'n': 5}),
         ('-P path -s --name name -m color -n 10 something else', {'cmd': 'save', 'text': ['something', 'else'], 'path': 'path', 'name': 'name', 'mode': 'color', 'n': 10}),
+        ('-P path -s --name name -m color -t json', {'cmd': 'save', 'text': [], 'path': 'path', 'name': 'name', 'mode': 'color', 'type': 'json'}),
+        ('-P path -p --name name -m color -t json something else', {'cmd': 'print', 'text': ['something', 'else'], 'path': 'path', 'name': 'name', 'mode': 'color', 'type': 'json'}),
+        ('-P path -p --name name -m color -t text -n 5 something else', {'cmd': 'print', 'text': ['something', 'else'], 'path': 'path', 'name': 'name', 'mode': 'color', 'type': 'text', 'n': 5}),
     ]
 )
 def test_parse_args(xession, argparse, args, expected, default_namespace_dict):

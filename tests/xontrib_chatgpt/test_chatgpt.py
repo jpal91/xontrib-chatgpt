@@ -9,7 +9,6 @@ from xontrib_chatgpt.exceptions import (
     UnsupportedModelError,
     NoConversationsError,
     InvalidConversationsTypeError,
-    InvalidLoadedChatError
 )
 
 
@@ -184,8 +183,8 @@ def test_print_convo_raises_invalid_convo_error(xession, chat):
 @pytest.mark.parametrize(
     ("mode", "file"),
     [
-        ("color", "color_convo.txt"),
-        ("no-color", "no_color_convo.txt"),
+        # ("color", "color_convo.txt"),
+        ("text", "no_color_convo.txt"),
         ("json", "convo.json"),
     ],
 )
@@ -231,7 +230,7 @@ def test_saves_convo_to_default_location(
     prefix, ext, mode = (
         f'user_{name or current_chat.alias or "chatgpt"}_{now}',
         ".json" if json else ".txt",
-        "json" if json else "no-color",
+        "json" if json else "text",
     )
 
     for i in range(3):
@@ -276,10 +275,10 @@ def test_cli_execution_save(xession, chat_w_alias, capsys, monkeypatch, monkeypa
     monkeypatch.setattr("xontrib_chatgpt.chatgpt.ChatGPT.save_convo", lambda _, path, name, mode: print('save_convo', path, name, mode))
     xession.aliases["gpt"](["-s"])
     out, err = capsys.readouterr()
-    assert out.strip() == 'save_convo   color'
-    xession.aliases["gpt"]("-s -P path -n 5 -m no-color --name name".split())
+    assert out.strip() == 'save_convo   text'
+    xession.aliases["gpt"]("-s -P path -n 5 -t json --name name".split())
     out, err = capsys.readouterr()
-    assert out.strip() == 'save_convo path name no-color'
+    assert out.strip() == 'save_convo path name json'
 
 
 def test_cli_execution_pipe(xession, chat_w_alias, capsys, monkeypatch_openai):
@@ -350,15 +349,3 @@ def test_parses_color_text(xession, temp_home):
     assert len(res) == 2
     assert '\x1b' not in res[0]['content']
 
-@pytest.mark.skip()
-def test_parse_raises(xession, temp_home):
-    text_path = temp_home / 'expected' / 'long_convo.txt'
-    with open(text_path) as f:
-        exp_text = f.read()
-    
-    convo = exp_text.split('\n')
-    convo[0] = 'invalid'
-    convo = '\n'.join(convo)
-
-    with pytest.raises(InvalidLoadedChatError):
-        parse_convo(convo)

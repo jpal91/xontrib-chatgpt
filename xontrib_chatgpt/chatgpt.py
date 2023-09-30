@@ -24,7 +24,6 @@ from xontrib_chatgpt.exceptions import (
     UnsupportedModelError,
     NoConversationsError,
     InvalidConversationsTypeError,
-    InvalidLoadedChatError
 )
 
 openai = LazyObject(_openai, globals(), "openai")
@@ -140,7 +139,7 @@ class ChatGPT(Block):
         elif pargs.cmd == 'print':
             self.print_convo(pargs.n, pargs.mode)
         elif pargs.cmd == 'save':
-            self.save_convo(pargs.path, pargs.name, pargs.mode)
+            self.save_convo(pargs.path, pargs.name, pargs.type)
 
     def __del__(self):
         if self.alias and self.alias in XSH.aliases:
@@ -336,14 +335,14 @@ class ChatGPT(Block):
         
         return path
 
-    def save_convo(self, path: str = '', name: str = '', mode: str = "no-color") -> None:
+    def save_convo(self, path: str = '', name: str = '', mode: str = "text") -> None:
         """
         Saves conversation to path or default xonsh data directory
         
         Args:
             path (str, optional): Path to save conversation to. Defaults to ''.
             name (str, optional): Name to use in the filename. Defaults to ''.
-            mode (str, optional): Mode to save in. Defaults to 'no-color'. Options - 'color', 'no-color', 'json'
+            mode (str, optional): Mode to save in. Defaults to 'text'. Options - 'text', 'json'
 
             When path is specified, name will be ignored.
         
@@ -356,13 +355,13 @@ class ChatGPT(Block):
         if not path:
             path = self._get_default_path(name=name, json_mode=mode == "json")
 
-        if mode in ["color", "no-color"]:
-            convo = self._get_printed_convo(0, mode == "color")
+        if mode == 'text':
+            convo = self._get_printed_convo(0, color=False)
         elif mode == "json":
             convo = self._get_json_convo(0)
         else:
             raise InvalidConversationsTypeError(
-                f'Invalid mode: "{mode}" -- options are "color", "no-color", and "json"'
+                f'Invalid mode: "{mode}" -- options are "text", and "json"'
             )
 
         with open(path, "w") as f:
