@@ -19,9 +19,14 @@ def _SINGLE_LINE_CODE():
     """Regex to remove single line code blocks (`code`) from markdown"""
     return re.compile(r"`(.*?)`")
 
-def _CHAT_REGEX():
-    """Regex to convert saved chats back into a list of messages"""
-    return re.compile(r'\n?(.+?):\n(.+?)(?=\n.+?|$)', re.DOTALL)
+# def _CHAT_REGEX():
+#     """Regex to convert saved chats back into a list of messages"""
+#     # return re.compile(r'\n?(.+?):\n(.+?)(?=\nChatGPT|$)', re.DOTALL)
+#     return re.compile(r'^(.+):\n(\s{4}.*)+', re.MULTILINE | re.DOTALL)
+
+# def _COLOR_REGEX():
+#     """Regex to assist in striping all x1b ansi escape codes"""
+#     return re.compile(r'\x1b.*?m', re.DOTALL)
 
 def _PYGMENTS():
     """Lazy loading of pygments to avoid slowing down shell startup"""

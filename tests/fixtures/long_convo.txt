@@ -1,8 +1,8 @@
-jpal:
+user:
     hello
 ChatGPT:
     Hello! How can I assist you today?
-jpal:
+user:
     Can you show me a simple `hello world` function in python?
 ChatGPT:
     Certainly! Here's a simple `hello world` function in Python:
@@ -16,14 +16,14 @@ ChatGPT:
     ```
     
     When you run this code, it will display `Hello, world!` in the console. Let me know if there's anything else I can help you with!
-jpal:
+user:
     Can you help me write a regex that will capture and split each users response in a chat with the following format -
     ###
-    jpal:
+    user:
         hello
     ChatGPT:
         Hello! How can I assist you today?
-    jpal:
+    user:
         Can you show me a simple `hello world` function in python?
     ChatGPT:
         Certainly! Here's a simple `hello world` function in Python:
@@ -61,11 +61,11 @@ ChatGPT:
     
     chat = """
     ###
-    jpal:
+    user:
         hello
     ChatGPT:
         Hello! How can I assist you today?
-    jpal:
+    user:
         Can you show me a simple `hello world` function in python?
     ChatGPT:
         Certainly! Here's a simple `hello world` function in Python:
@@ -94,13 +94,13 @@ ChatGPT:
     This will output:
     
     ```
-    User: jpal
+    User: user
     Response:     hello
     
     User: ChatGPT
     Response:     Hello! How can I assist you today?
     
-    User: jpal
+    User: user
     Response:     Can you show me a simple `hello world` function in python?
     
     User: ChatGPT

@@ -4,6 +4,7 @@ import json
 import weakref
 from datetime import datetime
 from typing import TextIO
+from textwrap import dedent
 from xonsh.built_ins import XSH
 from xonsh.tools import print_color, indent
 from xonsh.contexts import Block
@@ -23,11 +24,14 @@ from xontrib_chatgpt.exceptions import (
     UnsupportedModelError,
     NoConversationsError,
     InvalidConversationsTypeError,
+    InvalidLoadedChatError
 )
 
 openai = LazyObject(_openai, globals(), "openai")
 MULTI_LINE_CODE = LazyObject(_MULTI_LINE_CODE, globals(), "MULTI_LINE_CODE")
 SINGLE_LINE_CODE = LazyObject(_SINGLE_LINE_CODE, globals(), "SINGLE_LINE_CODE")
+# CHAT_REGEX = LazyObject(_CHAT_REGEX, globals(), "CHAT_REGEX")
+# COLOR_REGEX = LazyObject(_COLOR_REGEX, globals(), "COLOR_REGEX")
 PYGMENTS = LazyObject(_PYGMENTS, globals(), "PYGMENTS")
 markdown = LazyObject(_markdown, globals(), "markdown")
 parse = LazyObject(_parse, globals(), "parse")
@@ -392,3 +396,60 @@ class ChatGPT(Block):
     @staticmethod
     def getdoc() -> str:
         return DOCSTRING
+    
+    @classmethod
+    def fromconvo(cls, path, alias=''):
+        """Loads a conversation from a saved file and returns new instance"""
+        if not os.path.exists(path):
+            bname = os.path.basename(path)
+            default_dir = XSH.env.get("XONSH_DATA_DIR", os.path.join(os.path.expanduser("~"), ".local", "share", "xonsh"))
+            guess_name = os.path.join(default_dir, "chatgpt", bname)
+            
+            if not os.path.exists(guess_name):
+                raise FileNotFoundError(f'File not found: {path}')
+            else:
+                path = guess_name
+        
+        with open(path, 'r') as f:
+            convo = f.read()
+        
+        messages = parse_convo(convo)
+        new_cls = cls(alias=alias)
+        new_cls.messages = messages
+        
+        return new_cls
+
+def parse_convo(convo: str) -> list[dict[str, str]]:
+    """Parses a conversation from a saved file"""
+    try:
+        convo = json.loads(convo)
+    except json.JSONDecodeError:
+        pass
+    else:
+        return convo
+
+    convo = convo.split('\n')
+    messages, user, idx, n = [], True, 0, len(convo)
+
+    while idx < n:
+        if not convo[idx]:
+            idx += 1
+            continue
+
+        msg = {'role': 'user' if user else 'assistant', 'content': ''}
+        idx += 1
+
+        if idx == n:
+            break
+
+        while idx < n and convo[idx].startswith(' '):
+            msg['content'] += convo[idx] + '\n'
+            idx += 1
+        
+        msg['content'] = dedent(msg['content'])
+        messages.append(msg)
+        user = not user
+    
+    return messages
+        
+        

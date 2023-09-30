@@ -3,12 +3,13 @@ import json
 import shutil
 import pytest
 from datetime import datetime
-from xontrib.chatgpt import ChatGPT
+from xontrib_chatgpt.chatgpt import ChatGPT, parse_convo
 from xontrib_chatgpt.exceptions import (
     NoApiKeyError,
     UnsupportedModelError,
     NoConversationsError,
     InvalidConversationsTypeError,
+    InvalidLoadedChatError
 )
 
 
@@ -44,10 +45,12 @@ def temp_home(tmpdir_factory):
     home = tmpdir_factory.mktemp("home")
     home.mkdir("expected")
     home.mkdir("saved")
-    home.mkdir("data_dir")
-    fixtures = ["color_convo.txt", "no_color_convo.txt", "convo.json"]
+    data_dir = home.mkdir("data_dir")
+    data_dir.mkdir("chatgpt")
+    fixtures = ["color_convo.txt", "no_color_convo.txt", "convo.json", "long_convo.txt"]
     for f in fixtures:
         shutil.copy(f"tests/fixtures/{f}", f"{home}/expected/{f}")
+    shutil.copy(f'tests/fixtures/no_color_convo.txt', f'{data_dir}/chatgpt/no_color_convo.txt')
     yield home
 
 
@@ -298,3 +301,64 @@ def test_enter_exit(xession, chat, capsys, monkeypatch_openai):
     out = out.strip().split("\n    ")
     assert "ChatGPT" in out[0]
     assert "test" in out[1]
+
+def test_loads_from_convo(xession, temp_home):
+    chat_file = temp_home / 'expected' / 'no_color_convo.txt'
+    new_cls = ChatGPT.fromconvo(chat_file)
+    assert isinstance(new_cls, ChatGPT)
+    assert 'Please write me a hello world function' in new_cls.messages[0]['content']
+
+def test_loads_from_convo_in_default_dir(xession, temp_home):
+    xession.env['XONSH_DATA_DIR'] = str(temp_home / 'data_dir')
+    new_cls = ChatGPT.fromconvo('no_color_convo.txt')
+    assert isinstance(new_cls, ChatGPT)
+    assert 'Please write me a hello world function' in new_cls.messages[0]['content']
+
+def test_loads_from_convo_raises_file_not_found(xession, temp_home):
+    with pytest.raises(FileNotFoundError):
+        ChatGPT.fromconvo('invalid.txt')
+
+
+# parse_convo
+
+def test_parses_json(xession, temp_home):
+    json_path = temp_home / 'expected' / 'convo.json'
+    with open(json_path) as f:
+        exp_json = f.read()
+
+    assert parse_convo(exp_json) == json.loads(exp_json)
+
+def test_parses_text(xession, temp_home):
+    text_path = temp_home / 'expected' / 'long_convo.txt'
+    with open(text_path) as f:
+        exp_text = f.read()
+    
+    res = parse_convo(exp_text)
+    assert len(res) == 6
+
+    for r in res:
+        assert r['role'] in ['user', 'assistant']
+        assert r['content'] != ''
+
+@pytest.mark.skip()
+def test_parses_color_text(xession, temp_home):
+    text_path = temp_home / 'expected' / 'color_convo.txt'
+    with open(text_path) as f:
+        exp_text = f.read()
+    
+    res = parse_convo(exp_text)
+    assert len(res) == 2
+    assert '\x1b' not in res[0]['content']
+
+@pytest.mark.skip()
+def test_parse_raises(xession, temp_home):
+    text_path = temp_home / 'expected' / 'long_convo.txt'
+    with open(text_path) as f:
+        exp_text = f.read()
+    
+    convo = exp_text.split('\n')
+    convo[0] = 'invalid'
+    convo = '\n'.join(convo)
+
+    with pytest.raises(InvalidLoadedChatError):
+        parse_convo(convo)
