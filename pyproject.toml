@@ -52,7 +52,8 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools]
 packages=["xontrib", "xontrib_chatgpt"]
 package-dir = {xontrib = "xontrib", xontrib_chatgpt = "xontrib_chatgpt"}
-namespaces = false
+package-data = {xontrib = ["*.py"], xontrib_chatgpt = ["*.py"]}
+
 
 platforms = ["any"]
 include-package-data = false
