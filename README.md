@@ -6,6 +6,7 @@ Gives the ability to use ChatGPT directly from the command line
 If you like the idea click ⭐ on the repo and <a href="https://twitter.com/intent/tweet?text=Nice%20xontrib%20for%20the%20xonsh%20shell!&url=https://github.com/jpal91/xontrib-chatgpt" target="_blank">tweet</a>.
 </p>
 
+![Chat Screenshot](assets/chatgpt_xonsh.png)
 
 ## Installation
 
@@ -175,6 +176,8 @@ gpt = ChatGPT.fromconvo(path='path/to/my_convo.txt', alias='gpt')
       - Create instances/aliases
       - Monitor and get stats for all active conversations
    - The idea around this being there's one manager who controls everything and you don't have to go searching around for a specific convo, help, instance, alias, etc.
+- **Streaming Responses**
+   - Expand the ability to get streaming responses on the command line as opposed to waiting until the full completion is done
 
 
 ## Credits
