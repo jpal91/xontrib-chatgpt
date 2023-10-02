@@ -23,8 +23,8 @@ content-type = "text/markdown"
 
 
 
-[project.entry-points."xonsh.xontribs"]
-"chatgpt" = "xontrib.chatgpt"
+# [project.entry-points."xonsh.xontribs"]
+# "chatgpt" = "xontrib.chatgpt"
 
 
 
@@ -52,7 +52,6 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools]
 packages=["xontrib", "xontrib_chatgpt"]
 package-dir = {xontrib = "xontrib", xontrib_chatgpt = "xontrib_chatgpt"}
-package-data = {xontrib = ["*.py"], xontrib_chatgpt = ["*.py"]}
 
 
 platforms = ["any"]
