@@ -11,6 +11,12 @@ def _openai():
 
     return openai
 
+def _tiktoken():
+    """Imports tiktoken"""
+    import tiktoken
+
+    return tiktoken.get_encoding('cl100k_base')
+
 def _MULTI_LINE_CODE():
     """Regex to remove multiline code blocks (```code```) from markdown"""
     return re.compile(r"```.*?\n", re.DOTALL)

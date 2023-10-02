@@ -18,6 +18,7 @@ from xontrib_chatgpt.lazyobjs import(
     _SINGLE_LINE_CODE,
     _PYGMENTS,
     _markdown,
+    _tiktoken
 )
 from xontrib_chatgpt.exceptions import (
     NoApiKeyError,
@@ -27,6 +28,7 @@ from xontrib_chatgpt.exceptions import (
 )
 
 openai = LazyObject(_openai, globals(), "openai")
+tiktoken = LazyObject(_tiktoken, globals(), "tiktoken")
 MULTI_LINE_CODE = LazyObject(_MULTI_LINE_CODE, globals(), "MULTI_LINE_CODE")
 SINGLE_LINE_CODE = LazyObject(_SINGLE_LINE_CODE, globals(), "SINGLE_LINE_CODE")
 # CHAT_REGEX = LazyObject(_CHAT_REGEX, globals(), "CHAT_REGEX")
@@ -214,10 +216,10 @@ class ChatGPT(Block):
         )
 
         res_text = response["choices"][0]["message"]
-        tokens = response["usage"]["total_tokens"]
+        user_toks, gpt_toks = response["usage"]["prompt_tokens"], response['usage']['completion_tokens']
 
         self.messages.append(res_text)
-        self._tokens.append(tokens)
+        self._tokens.extend([user_toks, gpt_toks])
 
         if self.tokens >= self._max_tokens:
             self._trim()
@@ -415,6 +417,7 @@ class ChatGPT(Block):
         messages = parse_convo(convo)
         new_cls = cls(alias=alias)
         new_cls.messages = messages
+        new_cls._tokens = get_token_list(messages)
         
         return new_cls
 
@@ -430,6 +433,7 @@ def parse_convo(convo: str) -> list[dict[str, str]]:
     convo = convo.split('\n')
     messages, user, idx, n = [], True, 0, len(convo)
 
+    # Couldn't figure out how to do this with regex, so while loop instead
     while idx < n:
         if not convo[idx]:
             idx += 1
@@ -450,5 +454,19 @@ def parse_convo(convo: str) -> list[dict[str, str]]:
         user = not user
     
     return messages
+
+def get_token_list(messages: list[dict[str, str]]) -> list[int]:
+    """Gets the chat tokens for the loaded conversation"""
+    tokens_per_message = 3
+    tokens = [3]
+
+    for message in messages:
+        num_tokens = 0
+        num_tokens += tokens_per_message
+        for v in message.values():
+            num_tokens += len(tiktoken.encode(v))
+        tokens.append(num_tokens)
+    
+    return tokens
         
         

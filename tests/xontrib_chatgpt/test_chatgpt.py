@@ -3,7 +3,7 @@ import json
 import shutil
 import pytest
 from datetime import datetime
-from xontrib_chatgpt.chatgpt import ChatGPT, parse_convo
+from xontrib_chatgpt.chatgpt import ChatGPT, parse_convo, get_token_list
 from xontrib_chatgpt.exceptions import (
     NoApiKeyError,
     UnsupportedModelError,
@@ -35,7 +35,7 @@ class DummyAI:
     def create(self, **_):
         return {
             "choices": [{"message": {"content": "test", "role": "assistant"}}],
-            "usage": {"total_tokens": 1},
+            "usage": {"prompt_tokens": 1, 'completion_tokens': 1},
         }
 
 
@@ -46,7 +46,7 @@ def temp_home(tmpdir_factory):
     home.mkdir("saved")
     data_dir = home.mkdir("data_dir")
     data_dir.mkdir("chatgpt")
-    fixtures = ["color_convo.txt", "no_color_convo.txt", "convo.json", "long_convo.txt"]
+    fixtures = ["color_convo.txt", "no_color_convo.txt", "convo.json", "convo2.json", "long_convo.txt"]
     for f in fixtures:
         shutil.copy(f"tests/fixtures/{f}", f"{home}/expected/{f}")
     shutil.copy(f'tests/fixtures/no_color_convo.txt', f'{data_dir}/chatgpt/no_color_convo.txt')
@@ -100,13 +100,13 @@ def test_tokens(xession, chat):
     assert chat.tokens == 6
 
 
-def test_chat_raises_error_with_no_api_key(xession, chat):
+def test_chat_raises_error_with_no_api_key(xession, chat, monkeypatch_openai):
     xession.env["OPENAI_API_KEY"] = ""
     with pytest.raises(NoApiKeyError):
         chat.chat("test")
 
 
-def test_chat_raises_error_with_no_chat_model(xession, chat):
+def test_chat_raises_error_with_no_chat_model(xession, chat, monkeypatch_openai):
     xession.env["OPENAI_API_KEY"] = "test"
     xession.env["OPENAI_CHAT_MODEL"] = "test"
     with pytest.raises(UnsupportedModelError):
@@ -120,8 +120,8 @@ def test_chat_response(xession, monkeypatch_openai, chat):
         {"role": "user", "content": "test"},
         {"role": "assistant", "content": "test"},
     ]
-    assert chat._tokens == [1]
-    assert chat.tokens == 1
+    assert chat._tokens == [1, 1]
+    assert chat.tokens == 2
 
 
 def test_trim(xession, chat):
@@ -349,3 +349,13 @@ def test_parses_color_text(xession, temp_home):
     assert len(res) == 2
     assert '\x1b' not in res[0]['content']
 
+
+# get_token_list
+
+def test_get_token_list(xession, temp_home):
+    json_path = temp_home / 'expected' / 'convo2.json'
+    with open(json_path) as f:
+        exp_json = json.load(f)
+    res = get_token_list(exp_json)
+    assert len(res) == 7
+    assert sum(res) == 835
