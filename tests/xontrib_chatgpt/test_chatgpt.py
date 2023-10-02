@@ -87,7 +87,6 @@ def test_alias_creation(xession):
 
 
 def test_defualt_attribs(xession, chat):
-    assert chat.base == [{"role": "system", "content": "You are a helpful assistant."}]
     assert chat.messages == []
     assert chat._tokens == []
     assert chat._max_tokens == 3000

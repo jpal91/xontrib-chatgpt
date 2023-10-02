@@ -108,7 +108,8 @@ class ChatGPT(Block):
 
         self.alias = alias
         self.base: list[dict[str, str]] = [
-            {"role": "system", "content": "You are a helpful assistant."}
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "system", "content": "If your responses include code, make sure to wrap it in a markdown code block with the appropriate language. \n Example: \n ```python \n print('Hello World!') \n ```"},
         ]
         self.messages: list[dict[str, str]] = []
         self._tokens: list = []
