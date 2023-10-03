@@ -9,7 +9,7 @@ class ChatManager:
     """Class to manage multiple chats"""
 
     def __init__(self):
-        self._instances: dict[int, dict[str, Union[ChatGPT, str]]] = defaultdict(dict)
+        self._instances: dict[int, dict[str, Union[str, ChatGPT]]] = defaultdict(dict)
         self._current: Optional[int] = None
 
     def __call__(self, args, stdin=None):
@@ -22,10 +22,15 @@ class ChatManager:
         pass
 
     def add(self, chat):
-        pass
+        inst = ChatGPT(alias=chat, managed=True)
+        XSH.ctx[chat] = inst
+        self._instances[hash(inst)]['name'] = chat
 
     def ls(self):
-        pass
+        for inst in self._instances.values():
+            print(f'Name: {inst["name"]}')
+            print(str(inst['inst']))
+            print('')
 
     def load(self, chat):
         pass
@@ -50,11 +55,14 @@ class ChatManager:
         if self._current not in self._instances:
             self._current = None
     
-    def _on_chat_create(self, inst_hash: int) -> None:
+    def _on_chat_create(self, inst: ChatGPT) -> None:
         """Handler for on_chat_create. Updates the internal dict with the new chat instance."""
-        self._current = inst_hash
-        if inst_hash not in self._instances:
-            self._update_inst_dict()
+        self._current = hash(inst)
+        self._instances[hash(inst)] = {
+            'name': '',
+            'alias': inst.alias,
+            'inst': weakref.proxy(inst),
+        }
     
     def _on_chat_destroy(self, inst_hash: int) -> None:
         """Handler for on_chat_destroy. Removes the chat instance from the internal dict."""

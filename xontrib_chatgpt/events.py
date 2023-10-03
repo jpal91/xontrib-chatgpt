@@ -4,10 +4,9 @@ chat_events = [
     (
         'on_chat_create',
         """
-        on_chat_create(inst_hash: int) -> None
+        on_chat_create(inst: ChatGPT) -> None
 
-        Fired when new chat is created. Returns the hash to be added to 
-        the chat manager.
+        Fired when new chat is created. Returns the new instance.
         """
     ),
     (

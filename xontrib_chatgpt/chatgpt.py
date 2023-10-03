@@ -122,7 +122,7 @@ class ChatGPT(Block):
             XSH.aliases[self.alias] = lambda args, stdin=None: ref(args, stdin)
         
         if managed:
-            XSH.builtins.events.on_chat_create.fire(inst_hash=hash(self))
+            XSH.builtins.events.on_chat_create.fire(inst=self)
 
     def __enter__(self):
         res = self.chat(self.macro_block.strip())
