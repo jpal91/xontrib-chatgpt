@@ -1,13 +1,6 @@
 import pytest
 from xontrib_chatgpt.chatmanager import ChatManager
 from xontrib_chatgpt.chatgpt import ChatGPT
-from xontrib_chatgpt.events import add_events
-
-@pytest.fixture
-def cm_events(xession):
-    add_events(xession)
-    yield xession.builtins.events
-
 
 
 
@@ -52,9 +45,9 @@ def test_on_chat_destroy(xession, cm_events):
     assert cm._current is None
     assert hash(inst) not in cm._instances
 
-def test_on_chat_change(xession, cm_events):
+def test_on_chat_used(xession, cm_events):
     cm = ChatManager()
     assert cm._current is None
-    cm_events.on_chat_create(lambda *args, **kw: cm._on_chat_change(*args, **kw))
-    cm_events.on_chat_create.fire(inst_hash=1)
+    cm_events.on_chat_used(lambda *args, **kw: cm._on_chat_used(*args, **kw))
+    cm_events.on_chat_used.fire(inst_hash=1)
     assert cm._current == 1

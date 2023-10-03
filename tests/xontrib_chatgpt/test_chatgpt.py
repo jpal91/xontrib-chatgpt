@@ -358,3 +358,31 @@ def test_get_token_list(xession, temp_home):
     res = get_token_list(exp_json)
     assert len(res) == 7
     assert sum(res) == 835
+
+@pytest.fixture
+def inc_test(xession):
+    xession.ctx['test'] = 0
+    def inc_test(**kw):
+        xession.ctx['test'] += 1
+    return inc_test
+
+def test_on_chat_create(xession, cm_events, inc_test):    
+    cm_events.on_chat_create(inc_test)
+    inst = ChatGPT(managed=True)
+    assert xession.ctx['test'] == 1
+
+def test_on_chat_change(xession, cm_events, inc_test):
+    cm_events.on_chat_create(inc_test)
+    inst = ChatGPT(managed=True)
+    assert xession.ctx['test'] == 1
+    cm_events.on_chat_used(inc_test)
+    inst([])
+    assert xession.ctx['test'] == 2
+
+def test_on_chat_destroy(xession, cm_events, inc_test):
+    cm_events.on_chat_create(inc_test)
+    inst = ChatGPT(managed=True)
+    assert xession.ctx['test'] == 1
+    cm_events.on_chat_destroy(inc_test)
+    del inst
+    assert xession.ctx['test'] == 2

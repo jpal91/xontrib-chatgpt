@@ -64,6 +64,6 @@ class ChatManager:
         if inst_hash == self._current:
             self._current = None
     
-    def _on_chat_change(self, inst_hash: int) -> None:
-        """Handler for on_chat_change. Updates the current chat instance."""
+    def _on_chat_used(self, inst_hash: int) -> None:
+        """Handler for on_chat_used. Updates the current chat instance."""
         self._current = inst_hash

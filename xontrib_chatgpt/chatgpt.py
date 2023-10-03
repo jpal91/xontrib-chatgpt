@@ -97,7 +97,7 @@ class ChatGPT(Block):
 
     __xonsh_block__ = str
 
-    def __init__(self, alias: str = "") -> None:
+    def __init__(self, alias: str = "", managed: bool = False) -> None:
         """
         Initializes the ChatGPT instance
 
@@ -114,11 +114,15 @@ class ChatGPT(Block):
         self.messages: list[dict[str, str]] = []
         self._tokens: list = []
         self._max_tokens = 3000
+        self._managed = managed
 
         if self.alias:
             # Make sure the __del__ method is called despite the alias pointing to the instance
             ref = weakref.proxy(self)
             XSH.aliases[self.alias] = lambda args, stdin=None: ref(args, stdin)
+        
+        if managed:
+            XSH.builtins.events.on_chat_create.fire(inst_hash=hash(self))
 
     def __enter__(self):
         res = self.chat(self.macro_block.strip())
@@ -129,6 +133,9 @@ class ChatGPT(Block):
         del self.macro_block
 
     def __call__(self, args: list[str], stdin: TextIO = None):
+        if self._managed:
+            XSH.builtins.events.on_chat_used.fire(inst_hash=hash(self))
+        
         if args:
             pargs = parse.parse_args(args)
         elif stdin:
@@ -148,6 +155,9 @@ class ChatGPT(Block):
         if self.alias and self.alias in XSH.aliases:
             print(f"Deleting {self.alias}")
             del XSH.aliases[self.alias]
+        
+        if self._managed:
+            XSH.builtins.events.on_chat_destroy.fire(inst_hash=hash(self))
 
     def __str__(self):
         stats = self._stats()
