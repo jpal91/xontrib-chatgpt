@@ -410,7 +410,7 @@ class ChatGPT(Block):
         return DOCSTRING
     
     @classmethod
-    def fromconvo(cls, path, alias=''):
+    def fromconvo(cls, path, alias: str = '', managed: bool = False):
         """Loads a conversation from a saved file and returns new instance"""
         if not os.path.exists(path):
             bname = os.path.basename(path)
@@ -426,7 +426,7 @@ class ChatGPT(Block):
             convo = f.read()
         
         messages = parse_convo(convo)
-        new_cls = cls(alias=alias)
+        new_cls = cls(alias=alias, managed=managed)
         new_cls.messages = messages
         new_cls._tokens = get_token_list(messages)
         

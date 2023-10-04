@@ -2,10 +2,6 @@ import pytest
 from xontrib_chatgpt.chatmanager import ChatManager
 from xontrib_chatgpt.chatgpt import ChatGPT
 
-@pytest.fixture
-def cm():
-    return ChatManager()
-
 @pytest.fixture(scope='module')
 def temp_home(tmp_path_factory):
     home = tmp_path_factory.mktemp('home')
@@ -14,6 +10,20 @@ def temp_home(tmp_path_factory):
     (home / 'data_dir' / 'chatgpt' / 'dummy').mkdir()
     return home
 
+@pytest.fixture(autouse=True)
+def data_dir(xession, temp_home):
+    xession.env['XONSH_DATA_DIR'] = str(temp_home / 'data_dir')
+
+@pytest.fixture
+def test_files(temp_home):
+    test_files = ['test1.txt', 'test2.txt', 'test3.txt']
+    [(temp_home / 'data_dir' / 'chatgpt' / f).touch() for f in test_files]
+    yield test_files
+    [(temp_home / 'data_dir' / 'chatgpt' / f).unlink() for f in test_files]
+
+@pytest.fixture
+def cm():
+    return ChatManager()
 
 def test_update_inst_dict(xession, cm):
     insts = [
@@ -74,10 +84,37 @@ def test_ls(xession, cm_events, cm, monkeypatch, capsys):
     out, err = capsys.readouterr()
     assert out.strip() == 'Name: test1\ntest_out\n\nName: test2\ntest_out'
 
-def test_find_saved(xession, cm, temp_home):
-    data_dir = xession.env['XONSH_DATA_DIR'] = str(temp_home / 'data_dir')
-    test_files = ['test1.txt', 'test2.txt', 'test3.txt']
-    [(temp_home / 'data_dir' / 'chatgpt' / f).touch() for f in test_files]
+def test_find_saved(xession, cm, temp_home, test_files):
     res = cm._find_saved()
     assert len(res) == 3
     assert sorted(res) == test_files
+
+@pytest.mark.parametrize(
+    ('input', 'fname','name'),
+    [
+        ('test1', 'something_test1.txt','test1'),
+        ('something_test2_01-02-03.json','something_test2_01-02-03.json','test2'),
+        ('test3', 'test3.txt', 'test3'),
+    ],
+)
+def test_find_path_from_name(xession, cm, input, fname, name, temp_home):
+    data_dir = temp_home / 'data_dir'
+    chat_dir = data_dir / 'chatgpt'
+    (chat_dir / fname).touch()
+    res = cm._find_path_from_name(input)
+    assert res == (str(chat_dir / fname), name)
+
+@pytest.mark.parametrize(
+    ('inp', 'name'),
+    [
+        ('data_dir/chatgpt/test1.txt', 'test1'),
+        ('test2.txt', 'test2'),
+        ('test3', 'test3'),
+    ]
+)
+def test_load(xession, cm, inp, name, temp_home, test_files):
+    data_dir = temp_home / 'data_dir'
+    inp = inp.replace('data_dir', str(data_dir))
+    res = cm.load(inp)
+    assert name in xession.ctx
+    assert f'Loaded chat {name}' in res

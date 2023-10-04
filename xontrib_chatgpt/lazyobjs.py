@@ -66,3 +66,7 @@ def _markdown():
     return lambda text: highlight(
         text, MarkdownLexer(), Terminal256Formatter(style=GhDarkStyle)
     )
+
+def _FIND_NAME_REGEX():
+    """Regex to find the name of a chat from a file name"""
+    return re.compile(r'^(?:.+?_)*([a-zA-Z0-9]+)(?:_[0-9\-]+)?\.(?:.*)$', re.DOTALL)
