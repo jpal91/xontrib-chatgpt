@@ -74,6 +74,12 @@ def test_add(xession, cm):
     assert isinstance(xession.ctx['test'], ChatGPT)
     assert 'test' in xession.aliases
 
+def test_add_with_conflicting_name(xession, cm):
+    cm.add('test')
+    res = cm.add('test')
+    assert res == 'Chat with that name already exists!'
+
+
 def test_ls(xession, cm_events, cm, monkeypatch, capsys):
     monkeypatch.setattr('xontrib_chatgpt.chatgpt.ChatGPT.__str__', lambda *_, **__: 'test_out')
     cm_events.on_chat_create(lambda *args, **kw: cm._on_chat_create(*args, **kw))
@@ -103,6 +109,7 @@ def test_find_path_from_name(xession, cm, input, fname, name, temp_home):
     (chat_dir / fname).touch()
     res = cm._find_path_from_name(input)
     assert res == (str(chat_dir / fname), name)
+    (chat_dir / fname).unlink()
 
 def test_choose_from_multiple(xession, cm, monkeypatch):
     monkeypatch.setattr('builtins.input', lambda *_, **__: '2')

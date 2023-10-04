@@ -15,6 +15,7 @@ class ChatManager:
     def __init__(self):
         self._instances: dict[int, dict[str, Union[str, ChatGPT]]] = defaultdict(dict)
         self._current: Optional[int] = None
+        self._update_inst_dict()
 
     def __call__(self, args, stdin=None):
         pass
@@ -27,6 +28,8 @@ class ChatManager:
 
     def add(self, chat_name: str) -> str:
         """Create new chat instance"""
+        if chat_name in self.chat_names():
+            return 'Chat with that name already exists!'
         inst = ChatGPT(alias=chat_name, managed=True)
         XSH.ctx[chat_name] = inst
         self._instances[hash(inst)]['name'] = chat_name
