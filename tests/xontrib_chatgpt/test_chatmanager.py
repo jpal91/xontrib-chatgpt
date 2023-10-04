@@ -1,4 +1,5 @@
 import pytest
+from datetime import datetime
 from xontrib_chatgpt.chatmanager import ChatManager
 from xontrib_chatgpt.chatgpt import ChatGPT
 
@@ -137,3 +138,18 @@ def test_load_with_conflicting_name(xession, cm, test_files, temp_home):
     assert 'Loaded chat test10' in res
     assert 'test10' in xession.ctx
     assert 'test1' in xession.ctx
+
+def test_save(xession, cm, test_files, temp_home, cm_events, monkeypatch):
+    monkeypatch.setenv('USER', 'user')
+    cm_events.on_chat_create(lambda *args, **kw: cm._on_chat_create(*args, **kw))
+    assert cm.save() == 'No active chat!'
+    inst = ChatGPT(alias='new', managed=True)
+    inst.messages += [{'role': 'user', 'content': 'test'}]
+    res = cm.save()
+    assert res is None
+    now = datetime.now().strftime("%Y-%m-%d")
+    assert (temp_home / 'data_dir' / 'chatgpt' / f'user_new_{now}.txt').exists()
+
+def test_save_returns_when_key_error(xession, cm):
+    res = cm.save('no_exist')
+    assert res == 'No chat with name no_exist found.'

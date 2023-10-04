@@ -69,19 +69,19 @@ class ChatManager:
 
         return f'Loaded chat {name} from {path}'
 
-    def save(self, chat_name: str = '', mode: str = 'text') -> str:
+    def save(self, chat_name: str = '', mode: str = 'text') -> Optional[str]:
         if not chat_name and not self._current:
             return 'No active chat!'
         elif not chat_name:
             chat = self._instances[self._current]
-            chat_name = self._instances[self._current]['name']
         else:
             try:
                 chat = self._instances[hash(XSH.ctx[chat_name])]
             except KeyError:
                 return f'No chat with name {chat_name} found.'
 
-            chat_name = chat['name']
+        return chat['inst'].save_convo(mode=mode)
+
 
     def print_chat(self, chat):
         pass
