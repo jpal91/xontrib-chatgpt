@@ -104,6 +104,11 @@ def test_find_path_from_name(xession, cm, input, fname, name, temp_home):
     res = cm._find_path_from_name(input)
     assert res == (str(chat_dir / fname), name)
 
+def test_choose_from_multiple(xession, cm, monkeypatch):
+    monkeypatch.setattr('builtins.input', lambda *_, **__: '2')
+    res = cm._choose_from_multiple([('test1', 'file1'), ('test2', 'file2')])
+    assert res == ('test2', 'file2')
+
 @pytest.mark.parametrize(
     ('inp', 'name'),
     [
@@ -118,3 +123,10 @@ def test_load(xession, cm, inp, name, temp_home, test_files):
     res = cm.load(inp)
     assert name in xession.ctx
     assert f'Loaded chat {name}' in res
+
+def test_load_with_conflicting_name(xession, cm, test_files, temp_home):
+    cm.add('test1')
+    res = cm.load('test1')
+    assert 'Loaded chat test10' in res
+    assert 'test10' in xession.ctx
+    assert 'test1' in xession.ctx

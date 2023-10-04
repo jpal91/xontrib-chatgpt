@@ -51,17 +51,43 @@ class ChatManager:
         else:
             path, name = self._find_path_from_name(path_or_name)
         
+        curr_names = self.chat_names()
+        
+        if name in curr_names:
+            idx = 0
+            while name + str(idx) in curr_names:
+                idx += 1
+            print(f'Chat with name {name} already loaded. Updating to {name + str(idx)}')
+            name += str(idx)
+            
         inst = ChatGPT.fromconvo(path, alias=name, managed=True)
         XSH.ctx[name] = inst
         self._instances[hash(inst)]['name'] = name
 
         return f'Loaded chat {name} from {path}'
 
-    def save(self, chat):
+    def save(self, chat_name: str = '', mode: str = 'text') -> str:
+        if not chat_name and not self._current:
+            return 'No active chat!'
+        elif not chat_name:
+            chat = self._instances[self._current]
+            chat_name = self._instances[self._current]['name']
+        else:
+            try:
+                chat = self._instances[hash(XSH.ctx[chat_name])]
+            except KeyError:
+                return f'No chat with name {chat_name} found.'
+
+            chat_name = chat['name']
+
+    def print_chat(self, chat):
         pass
 
     def help(self, tgt):
         pass
+
+    def chat_names(self) -> list[str]:
+        return [inst['name'] for inst in self._instances.values()]
 
     def _find_saved(self) -> list[str]:
         def_dir = os.path.join(XSH.env['XONSH_DATA_DIR'], 'chatgpt')
@@ -74,14 +100,41 @@ class ChatManager:
         if name in saved:
             return os.path.join(def_dir, 'chatgpt', name), FIND_NAME_REGEX.sub(r'\1', name)
         
-        names_saved = [FIND_NAME_REGEX.sub(r'\1', f) for f in saved]
+        names_saved = [
+            (n, f) for n, f in
+            [(FIND_NAME_REGEX.sub(r'\1', f), f) for f in saved]
+            if n == name
+        ]
 
-        if name not in names_saved:
+        if not names_saved:
             raise FileNotFoundError(f'No chat with name {name} found.')
+        elif len(names_saved) > 1:
+            chat_name, file = self._choose_from_multiple(names_saved)
+        else:
+            chat_name, file = names_saved[0]
         
-        idx = names_saved.index(name)
         
-        return os.path.join(def_dir, 'chatgpt', saved[idx]), names_saved[idx]
+        return os.path.join(def_dir, 'chatgpt', file), chat_name
+    
+    def _choose_from_multiple(self, chats: list[tuple[str, str]]) -> tuple[str, str]:
+        print('Multiple choices found, please choose from:')
+        [print(f'  {i + 1}. {n[0]}') for i, n in enumerate(chats)]
+        
+        while True:
+            max_choice = len(chats)
+            choice = input(f'Number (1 - {max_choice}): ')
+
+            try:
+                choice = int(choice)
+            except ValueError:
+                print('Invalid input, please enter a number.')
+                continue
+
+            if not 0 < choice <= max_choice:
+                print(f'Invalid input, please enter a number between 1 and {max_choice}.')
+                continue
+
+            return chats[choice - 1]
 
     def _update_inst_dict(self):
         """Finds all active instances (active convos) in the global space and updates the internal dict"""
