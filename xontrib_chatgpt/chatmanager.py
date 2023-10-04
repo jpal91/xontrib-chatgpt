@@ -1,3 +1,4 @@
+import os
 import weakref
 from collections import defaultdict
 from typing import Optional, Union
@@ -26,7 +27,12 @@ class ChatManager:
         XSH.ctx[chat] = inst
         self._instances[hash(inst)]['name'] = chat
 
-    def ls(self):
+    def ls(self, saved: bool = False):
+        if saved:
+            print('Saved chats:')
+            [print(f'  {f}') for f in self._find_saved()]
+            return
+        
         for inst in self._instances.values():
             print(f'Name: {inst["name"]}')
             print(str(inst['inst']))
@@ -40,6 +46,10 @@ class ChatManager:
 
     def help(self, tgt):
         pass
+
+    def _find_saved(self):
+        def_dir = os.path.join(XSH.env['XONSH_DATA_DIR'], 'chatgpt')
+        return [f for f in os.listdir(def_dir) if os.path.isfile(os.path.join(def_dir, f))]
 
     def _update_inst_dict(self):
         """Finds all active instances (active convos) in the global space and updates the internal dict"""

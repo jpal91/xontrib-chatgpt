@@ -6,6 +6,14 @@ from xontrib_chatgpt.chatgpt import ChatGPT
 def cm():
     return ChatManager()
 
+@pytest.fixture(scope='module')
+def temp_home(tmp_path_factory):
+    home = tmp_path_factory.mktemp('home')
+    (home / 'data_dir').mkdir()
+    (home / 'data_dir' / 'chatgpt').mkdir()
+    (home / 'data_dir' / 'chatgpt' / 'dummy').mkdir()
+    return home
+
 
 def test_update_inst_dict(xession, cm):
     insts = [
@@ -65,3 +73,11 @@ def test_ls(xession, cm_events, cm, monkeypatch, capsys):
     cm.ls()
     out, err = capsys.readouterr()
     assert out.strip() == 'Name: test1\ntest_out\n\nName: test2\ntest_out'
+
+def test_find_saved(xession, cm, temp_home):
+    data_dir = xession.env['XONSH_DATA_DIR'] = str(temp_home / 'data_dir')
+    test_files = ['test1.txt', 'test2.txt', 'test3.txt']
+    [(temp_home / 'data_dir' / 'chatgpt' / f).touch() for f in test_files]
+    res = cm._find_saved()
+    assert len(res) == 3
+    assert sorted(res) == test_files
