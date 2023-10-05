@@ -7,20 +7,14 @@ from re import Pattern
 
 from xonsh.built_ins import XSH
 from xonsh.ansi_colors import ansi_partial_color_format
-from xonsh.lazyasd import LazyObject, lazyobject
+from xonsh.lazyasd import LazyObject
 
 from xontrib_chatgpt.chatgpt import ChatGPT
 from xontrib_chatgpt.lazyobjs import _FIND_NAME_REGEX
+from xontrib_chatgpt.args import _cm_parse
 
 FIND_NAME_REGEX: Pattern = LazyObject(_FIND_NAME_REGEX, globals(), "FIND_NAME_REGEX")
-
-
-# PARSER: ArgumentParser = LazyObject(_cm_parse, globals(), 'PARSER')
-@lazyobject
-def PARSER():
-    from xontrib_chatgpt.args import _cm_parse
-
-    return _cm_parse()
+PARSER: ArgumentParser = LazyObject(_cm_parse, globals(), "PARSER")
 
 
 class ChatManager:
@@ -255,7 +249,7 @@ class ChatManager:
         return os.path.join(def_dir, "chatgpt", file), chat_name
 
     def _choose_from_multiple(self, chats: list[tuple[str, str]]) -> tuple[str, str]:
-        """If multiple chats are found, allows the user to choose from them"""
+        """If multiple saved chats are found, allows the user to choose from them"""
         print("Multiple choices found, please choose from:")
         [print(f"  {i + 1}. {n[0]}") for i, n in enumerate(chats)]
 
