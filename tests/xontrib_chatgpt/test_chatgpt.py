@@ -364,17 +364,6 @@ def test_parses_text(xession, temp_home):
         assert r["content"] != ""
 
 
-@pytest.mark.skip()
-def test_parses_color_text(xession, temp_home):
-    text_path = temp_home / "expected" / "color_convo.txt"
-    with open(text_path) as f:
-        exp_text = f.read()
-
-    res = parse_convo(exp_text)
-    assert len(res) == 2
-    assert "\x1b" not in res[0]["content"]
-
-
 # get_token_list
 
 
