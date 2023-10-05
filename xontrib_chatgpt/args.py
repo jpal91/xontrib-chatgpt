@@ -42,6 +42,9 @@ def _cm_parse() -> ArgumentParser:
     p_print.add_argument('-n', type=int, default=10, help='Number of conversations to print')
     p_print.add_argument('-m', '--mode', type=str, default='color', choices=['color', 'no-color', 'json'], help='Mode to print or save the conversation. Default is color')
 
+    p_help = subparser.add_parser('help', help='Print help information')
+    p_help.add_argument('tgt', type=str, default='', help='Target to print help information on. Defaults to chat-manager', nargs='?')
+
     return parser
 
 if __name__ == '__main__':

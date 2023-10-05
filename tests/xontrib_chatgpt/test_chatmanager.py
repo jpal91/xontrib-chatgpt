@@ -155,6 +155,7 @@ def test_save_returns_when_key_error(xession, cm):
     res = cm.save('no_exist')
     assert res == 'No chat with name no_exist found.'
 
+
 @pytest.mark.parametrize(
     ('action', 'args', 'expected'),
     [
@@ -166,6 +167,8 @@ def test_save_returns_when_key_error(xession, cm):
         ('load', ['load', 'test'], (('test',), {})),
         ('print_chat', ['print'], ((), {'chat_name': '', 'n': 10, 'mode': 'color'})),
         ('print_chat', ['print', '-n', '20', '-m', 'json', 'name'], ((), {'chat_name': 'name', 'n': 20, 'mode': 'json'})),
+        ('help', ['help'], ((), {'tgt': ''})),
+        ('help', ['help', 'print_chat'], ((), {'tgt': 'print_chat'})),
     ]
 )
 def test_cli(xession, cm, action, args, expected, monkeypatch):

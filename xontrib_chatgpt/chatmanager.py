@@ -46,15 +46,9 @@ class ChatManager:
         elif pargs.cmd == 'print':
             return self.print_chat(chat_name=pargs.name, n=pargs.n, mode=pargs.mode)
         elif pargs.cmd == 'help':
-            pass
+            return self.help(tgt=pargs.tgt)
         else:
             return PARSER.print_help()
-
-    def __str__(self):
-        pass
-
-    def __repr__(self):
-        pass
 
     def add(self, chat_name: str) -> str:
         """Create new chat instance"""
@@ -126,8 +120,17 @@ class ChatManager:
         
         chat['inst'].print_convo(n=n, mode=mode)
 
-    def help(self, tgt):
-        pass
+    def help(self, tgt: str = '') -> None:
+        if not tgt:
+            PARSER.print_help()
+            return
+        
+        if hasattr(self, tgt):
+            XSH.help(getattr(self, tgt))
+        elif hasattr(ChatGPT, tgt):
+            XSH.help(getattr(ChatGPT, tgt))
+        else:
+            PARSER.print_help()
 
     def chat_names(self) -> list[str]:
         return [inst['name'] for inst in self._instances.values()]
