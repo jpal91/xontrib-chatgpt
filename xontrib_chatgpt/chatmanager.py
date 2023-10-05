@@ -224,8 +224,9 @@ class ChatManager:
     
     def _usage_str(self) -> str:
         """Returns a usage string for the xontrib."""
-        usage = """\
+        usage = """
         {BOLD_WHITE}Usage of {BOLD_BLUE}chat-manager{RESET}
+        ---------------------
 
         First, start off by creating a new chat that we'll call 'gpt':
             {YELLOW}>>> {BOLD_BLUE}chat-manager {BOLD_GREEN}add {RESET}gpt
@@ -238,12 +239,12 @@ class ChatManager:
         a {BOLD_BLUE}Xonsh{RESET} alias, so you can simply call it as such:
             {YELLOW}>>> {BOLD_BLUE}gpt{RESET} Hello, how are you?
 
-        Since Xonsh aliases can can interact with bash and xsh syntax, you can also
+        Since {BOLD_BLUE}Xonsh{RESET} aliases can can interact with bash and xsh syntax, you can also
         use the following:
-            {YELLOW}>>> {BOLD_BLUE}echo{RESET} 'Hello, how are you?' {BOLD_WHITE}| {BOLD_BLUE}gpt{RESET}
-            {YELLOW}>>> {BOLD_BLUE}gpt{RESET} {BOLD_WHITE}< {BOLD_BLUE}echo{RESET} 'Hello, how are you?'
+            {YELLOW}>>> {BOLD_BLUE}echo{RESET} {INTENSE_YELLOW}'Hello, how are you?' {BOLD_WHITE}| {BOLD_BLUE}gpt{RESET}
+            {YELLOW}>>> {BOLD_BLUE}gpt{RESET} {BOLD_WHITE}< {BOLD_BLUE}echo{RESET} {INTENSE_YELLOW}'Hello, how are you?'
             {YELLOW}>>> {BOLD_BLUE}cat{RESET} my_input.txt {BOLD_WHITE}| {BOLD_BLUE}gpt{RESET}
-            {YELLOW}>>> {BOLD_WHITE}my_input ={RESET} "Hello, how are you?"
+            {YELLOW}>>> {BOLD_WHITE}my_input ={RESET} {INTENSE_YELLOW}"Hello, how are you?"
             {YELLOW}>>> {BOLD_BLUE}echo {BOLD_PURPLE}@({BOLD_WHITE}my_input{BOLD_PURPLE}) {BOLD_WHITE}| {BOLD_BLUE}gpt{RESET}
         
         Finally, the instance also acts as a {BOLD_BLUE}Xonsh{RESET} context block:

@@ -1,4 +1,5 @@
 from xonsh.built_ins import XonshSession
+from xontrib_chatgpt.chatmanager import ChatManager
 
 chat_events = [
     (
@@ -29,11 +30,15 @@ chat_events = [
     )
 ]
 
-def add_events(xsh: XonshSession):
+def add_events(xsh: XonshSession, cm: ChatManager):
     events = xsh.builtins.events
 
     for c in chat_events:
         events.doc(*c)
+    
+    events.on_chat_create(lambda *_, **kw: cm._on_chat_create(**kw))
+    events.on_chat_destroy(lambda *_, **kw: cm._on_chat_destroy(**kw))
+    events.on_chat_used(lambda *_, **kw: cm._on_chat_used(**kw))
 
 def rm_events(xsh: XonshSession):
     events = xsh.builtins.events
