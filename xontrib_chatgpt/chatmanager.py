@@ -5,13 +5,17 @@ from typing import Optional, Union, TextIO
 from argparse import ArgumentParser
 from re import Pattern
 from xonsh.built_ins import XSH
-from xonsh.lazyasd import LazyObject
+from xonsh.lazyasd import LazyObject, lazyobject
 from xontrib_chatgpt.chatgpt import ChatGPT
 from xontrib_chatgpt.lazyobjs import _FIND_NAME_REGEX
-from xontrib_chatgpt.args import _cm_parse
+# from xontrib_chatgpt.args import _cm_parse
 
 FIND_NAME_REGEX: Pattern = LazyObject(_FIND_NAME_REGEX, globals(), 'FIND_NAME_REGEX')
-PARSER: ArgumentParser = LazyObject(_cm_parse, globals(), 'PARSER')
+# PARSER: ArgumentParser = LazyObject(_cm_parse, globals(), 'PARSER')
+@lazyobject
+def PARSER():
+    from xontrib_chatgpt.args import _cm_parse
+    return _cm_parse()
 
 class ChatManager:
     """Class to manage multiple chats"""
@@ -46,7 +50,7 @@ class ChatManager:
         elif pargs.cmd == 'print':
             return self.print_chat(chat_name=pargs.name, n=pargs.n, mode=pargs.mode)
         elif pargs.cmd == 'help':
-            return self.help(tgt=pargs.tgt)
+            return self.help(tgt=pargs.target)
         else:
             return PARSER.print_help()
 
@@ -216,3 +220,38 @@ class ChatManager:
     def _on_chat_used(self, inst_hash: int) -> None:
         """Handler for on_chat_used. Updates the current chat instance."""
         self._current = inst_hash
+    
+    def _usage_str(self) -> str:
+        """Returns a usage string for the xontrib."""
+        usage = """\
+        Usage of chat-manager
+
+        First, start off by creating a new chat that we'll call 'gpt':
+            >>> chat-manager add gpt
+        
+        This creates a new conversation with ChatGPT which you can interact with.
+        Any input and responses will be saved to this instance, so you can continue
+            with your conversation as you please.
+
+        From here, you have several ways to interact. The instance is created as 
+            a Xonsh alias, so you can simply call it as such:
+            >>> gpt Hello, how are you?
+
+        Since Xonsh aliases can can interact with bash-like and xsh syntax, you can also
+            use the following:
+            >>> echo 'Hello, how are you?' | gpt
+            >>> gpt < echo 'Hello, how are you?'
+            >>> cat my_input.txt | gpt
+            >>> my_input = "Hello, how are you?"
+            >>> echo @(my_input) | gpt
+        
+        Finally, the instance also acts as a Xonsh context block:
+            >>> with! gpt:
+            >>>     Can you help me fix my python function?
+            >>>     def hello_world():
+            >>>         return
+            >>>         print("Hello World!")
+        
+        Any content added to the context block will be sent to ChatGPT, allowing
+            you to send multi-line messages to ChatGPT.
+        """

@@ -8,11 +8,12 @@ __all__ = ()
 
 
 def _load_xontrib_(xsh: XonshSession, **_):
+
     xsh.aliases["chatgpt"] = lambda args, stdin=None: ChatGPT.fromcli(args, stdin)
     xsh.aliases["chatgpt?"] = lambda *_, **__: xsh.help(ChatGPT)
     
-    cm = ChatManager()
-    xsh.aliases["chat-manager"] = lambda args, stdin=None: cm(args, stdin)
+    CM = ChatManager()
+    xsh.aliases["chat-manager"] = lambda args, stdin=None: CM(args, stdin)
 
     if 'abbrevs' in xsh.ctx:
         xsh.ctx['abbrevs']['cm'] = 'chat-manager'

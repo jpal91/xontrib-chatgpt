@@ -20,12 +20,12 @@ def _parse():
 
 def _cm_parse() -> ArgumentParser:
     parser = ArgumentParser(prog='chat-manager', description='Chat with OpenAI\'s ChatGPT from the command line')
-    parser.add_argument('-C', '--current', help='Print information on the current/last used chat and exit', nargs='?', const=True, default=False)
+    parser.add_argument('-C', help='Print information on the current/last used chat and exit', const=True, default=False, action='store_const')
     
-    subparser = parser.add_subparsers(dest='cmd', title='Commands')
+    subparser = parser.add_subparsers(dest='cmd', title='Available Commands', metavar='COMMAND')
 
     p_add = subparser.add_parser('add', help='Add/Create a chat')
-    p_add.add_argument('name', type=str, help='Name of the chat', nargs=1)
+    p_add.add_argument('name', type=str, help='Name of the chat to create', nargs=1)
 
     p_list = subparser.add_parser('list', help='List all current or saved chats', aliases=['ls'])
     p_list.add_argument('-s', '--saved', action='store_true', help='List all saved chats from the default directory')
@@ -42,12 +42,12 @@ def _cm_parse() -> ArgumentParser:
     p_print.add_argument('-n', type=int, default=10, help='Number of conversations to print')
     p_print.add_argument('-m', '--mode', type=str, default='color', choices=['color', 'no-color', 'json'], help='Mode to print or save the conversation. Default is color')
 
-    p_help = subparser.add_parser('help', help='Print help information')
-    p_help.add_argument('tgt', type=str, default='', help='Target to print help information on. Defaults to chat-manager', nargs='?')
+    p_help = subparser.add_parser('help', help='Print help information', epilog='hello')
+    p_help.add_argument('target', type=str, default='', help='Target to print help information on. Defaults to chat-manager', nargs='?')
 
     return parser
 
 if __name__ == '__main__':
     parser = _cm_parse()
-    args = parser.parse_args(['ls', '-s'])
+    args = parser.parse_args(['help', '-h'])
     print(args)
