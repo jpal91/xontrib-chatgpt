@@ -74,7 +74,7 @@ class ChatManager:
         self._instances[hash(inst)]["name"] = chat_name
         return f"Created new chat {chat_name}"
 
-    def ls(self, saved: bool = False) -> None:
+    def ls(self, saved: bool = False) -> str:
         """List all active chats or saved chats
 
         Parameters
@@ -84,17 +84,21 @@ class ChatManager:
 
         Returns
         -------
-        None
+        str
         """
         if saved:
-            print("Saved chats:")
-            [print(f"  {f}") for f in self._find_saved()]
-            return
+            return (
+                ansi_partial_color_format("{BOLD_WHITE}Saved chats:")
+                + "\n  "
+                + "\n  ".join(self._find_saved())
+            )
+        
+        if not self._instances:
+            return "No active chats."
 
-        for inst in self._instances.values():
-            print(f'Name: {inst["name"]}')
-            print(str(inst["inst"]))
-            print("")
+        return "\n\n".join(
+            [inst["inst"].stats() for inst in self._instances.values()]
+        )
 
     def load(self, path_or_name: str) -> str:
         """Load a conversation from a path or a saved chat name
@@ -216,9 +220,11 @@ class ChatManager:
         """Returns chat names for current conversations"""
         return [inst["name"] for inst in self._instances.values()]
 
-    def _find_saved(self) -> list[str]:
+    def _find_saved(self) -> list[Optional[str]]:
         """Returns a list of saved chat files in the default directory"""
         def_dir = os.path.join(XSH.env["XONSH_DATA_DIR"], "chatgpt")
+        if not os.path.exists(def_dir):
+            return []
         return [
             f for f in os.listdir(def_dir) if os.path.isfile(os.path.join(def_dir, f))
         ]

@@ -95,15 +95,14 @@ def test_add_with_conflicting_name(xession, cm):
 
 def test_ls(xession, cm_events, cm, monkeypatch, capsys):
     monkeypatch.setattr(
-        "xontrib_chatgpt.chatgpt.ChatGPT.__str__", lambda *_, **__: "test_out"
+        "xontrib_chatgpt.chatgpt.ChatGPT.stats", lambda *_, **__: "test_out"
     )
     cm_events.on_chat_create(lambda *args, **kw: cm.on_chat_create_handler(*args, **kw))
     cm.add("test1")
     cm.add("test2")
     assert len(cm._instances.keys()) == 2
-    cm.ls()
-    out, err = capsys.readouterr()
-    assert out.strip() == "Name: test1\ntest_out\n\nName: test2\ntest_out"
+    res = cm.ls()
+    assert res == "test_out\n\ntest_out"
 
 
 def test_find_saved(xession, cm, temp_home, test_files):

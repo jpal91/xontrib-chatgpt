@@ -175,17 +175,17 @@ class ChatGPT(Block):
     def stats(self) -> None:
         """Prints conversation stats to shell"""
         stats = self._stats()
-        for k, v, c in stats:
-            print_color("{}{}{} {}".format(c, k, "{BOLD_WHITE}", v))
+        return '\n'.join(
+            [ansi_partial_color_format("{} {}{}{} {}".format(tok, col, key, '{BOLD_WHITE}', val)) for key, val, col, tok in stats]
+        )
 
     def _stats(self) -> str:
         """Helper for stats and __str__"""
         stats = [
-            ("Alias:", f"{self.alias or None}", "{BOLD_YELLOW}"),
-            ("Tokens:", self.tokens, "{BOLD_GREEN}"),
-            ("Trim After:", f"{self._max_tokens} Tokens", "{BOLD_BLUE}"),
-            ("Mode:", XSH.env.get("OPENAI_CHAT_MODEL", "gpt-3.5-turbo"), "{BOLD_BLUE}"),
-            ("Messages:", len(self.messages), "{BOLD_BLUE}"),
+            ("Alias:", f"{self.alias or None}", "{BOLD_GREEN}", '🤖'),
+            ("Tokens:", self.tokens, "{BOLD_BLUE}", '🪙'),
+            ("Trim After:", f"{self._max_tokens} Tokens", "{BOLD_BLUE}", '🔪'),
+            ("Messages:", len(self.messages), "{BOLD_BLUE}", '📨'),
         ]
         return stats
 
