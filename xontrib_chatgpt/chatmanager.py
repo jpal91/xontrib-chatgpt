@@ -4,11 +4,13 @@ from collections import defaultdict
 from typing import Optional, Union, TextIO
 from argparse import ArgumentParser
 from re import Pattern
+
 from xonsh.built_ins import XSH
+from xonsh.ansi_colors import ansi_partial_color_format
 from xonsh.lazyasd import LazyObject, lazyobject
+
 from xontrib_chatgpt.chatgpt import ChatGPT
 from xontrib_chatgpt.lazyobjs import _FIND_NAME_REGEX
-# from xontrib_chatgpt.args import _cm_parse
 
 FIND_NAME_REGEX: Pattern = LazyObject(_FIND_NAME_REGEX, globals(), 'FIND_NAME_REGEX')
 # PARSER: ArgumentParser = LazyObject(_cm_parse, globals(), 'PARSER')
@@ -33,7 +35,7 @@ class ChatManager:
         else:
             return PARSER.print_help()
         
-        if pargs.current:
+        if pargs.C:
             if self._current is None:
                 return 'No active chat!'
             else:
@@ -126,8 +128,7 @@ class ChatManager:
 
     def help(self, tgt: str = '') -> None:
         if not tgt:
-            PARSER.print_help()
-            return
+            return self._usage_str()
         
         if hasattr(self, tgt):
             XSH.help(getattr(self, tgt))
@@ -224,34 +225,35 @@ class ChatManager:
     def _usage_str(self) -> str:
         """Returns a usage string for the xontrib."""
         usage = """\
-        Usage of chat-manager
+        {BOLD_WHITE}Usage of {BOLD_BLUE}chat-manager{RESET}
 
         First, start off by creating a new chat that we'll call 'gpt':
-            >>> chat-manager add gpt
+            {YELLOW}>>> {BOLD_BLUE}chat-manager {BOLD_GREEN}add {RESET}gpt
         
-        This creates a new conversation with ChatGPT which you can interact with.
+        This creates a new conversation with {BOLD_BLUE}ChatGPT{RESET} which you can interact with.
         Any input and responses will be saved to this instance, so you can continue
-            with your conversation as you please.
+        with your conversation as you please.
 
         From here, you have several ways to interact. The instance is created as 
-            a Xonsh alias, so you can simply call it as such:
-            >>> gpt Hello, how are you?
+        a {BOLD_BLUE}Xonsh{RESET} alias, so you can simply call it as such:
+            {YELLOW}>>> {BOLD_BLUE}gpt{RESET} Hello, how are you?
 
-        Since Xonsh aliases can can interact with bash-like and xsh syntax, you can also
-            use the following:
-            >>> echo 'Hello, how are you?' | gpt
-            >>> gpt < echo 'Hello, how are you?'
-            >>> cat my_input.txt | gpt
-            >>> my_input = "Hello, how are you?"
-            >>> echo @(my_input) | gpt
+        Since Xonsh aliases can can interact with bash and xsh syntax, you can also
+        use the following:
+            {YELLOW}>>> {BOLD_BLUE}echo{RESET} 'Hello, how are you?' {BOLD_WHITE}| {BOLD_BLUE}gpt{RESET}
+            {YELLOW}>>> {BOLD_BLUE}gpt{RESET} {BOLD_WHITE}< {BOLD_BLUE}echo{RESET} 'Hello, how are you?'
+            {YELLOW}>>> {BOLD_BLUE}cat{RESET} my_input.txt {BOLD_WHITE}| {BOLD_BLUE}gpt{RESET}
+            {YELLOW}>>> {BOLD_WHITE}my_input ={RESET} "Hello, how are you?"
+            {YELLOW}>>> {BOLD_BLUE}echo {BOLD_PURPLE}@({BOLD_WHITE}my_input{BOLD_PURPLE}) {BOLD_WHITE}| {BOLD_BLUE}gpt{RESET}
         
-        Finally, the instance also acts as a Xonsh context block:
-            >>> with! gpt:
-            >>>     Can you help me fix my python function?
-            >>>     def hello_world():
-            >>>         return
-            >>>         print("Hello World!")
+        Finally, the instance also acts as a {BOLD_BLUE}Xonsh{RESET} context block:
+            {YELLOW}>>> {BOLD_GREEN}with{BOLD_WHITE}! {BOLD_BLUE}gpt{BOLD_WHITE}:{RESET}
+            {YELLOW}>>>{RESET}     Can you help me fix my python function?
+            {YELLOW}>>>{RESET}     def hello_world():
+            {YELLOW}>>>{RESET}         return
+            {YELLOW}>>>{RESET}         print("Hello World!")
         
-        Any content added to the context block will be sent to ChatGPT, allowing
-            you to send multi-line messages to ChatGPT.
+        Any content added to the context block will be sent to {BOLD_BLUE}ChatGPT{RESET}, allowing
+        you to send multi-line messages to {BOLD_BLUE}ChatGPT{RESET}.
         """
+        return ansi_partial_color_format(usage)
