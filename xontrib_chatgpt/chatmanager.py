@@ -1,13 +1,17 @@
 import os
 import weakref
 from collections import defaultdict
-from typing import Optional, Union
+from typing import Optional, Union, TextIO
+from argparse import ArgumentParser
+from re import Pattern
 from xonsh.built_ins import XSH
 from xonsh.lazyasd import LazyObject
 from xontrib_chatgpt.chatgpt import ChatGPT
 from xontrib_chatgpt.lazyobjs import _FIND_NAME_REGEX
+from xontrib_chatgpt.args import _cm_parse
 
-FIND_NAME_REGEX = LazyObject(_FIND_NAME_REGEX, globals(), 'FIND_NAME_REGEX')
+FIND_NAME_REGEX: Pattern = LazyObject(_FIND_NAME_REGEX, globals(), 'FIND_NAME_REGEX')
+PARSER: ArgumentParser = LazyObject(_cm_parse, globals(), 'PARSER')
 
 class ChatManager:
     """Class to manage multiple chats"""
@@ -17,8 +21,34 @@ class ChatManager:
         self._current: Optional[int] = None
         self._update_inst_dict()
 
-    def __call__(self, args, stdin=None):
-        pass
+    def __call__(self, args: list[str], stdin: TextIO=None):
+        if args:
+            pargs = PARSER.parse_args(args)
+        elif stdin:
+            pargs = PARSER.parse_args(stdin.read().strip().split())
+        else:
+            return PARSER.print_help()
+        
+        if pargs.current:
+            if self._current is None:
+                return 'No active chat!'
+            else:
+                return str(self._instances[self._current]['inst'])
+        
+        if pargs.cmd == 'add':
+            return self.add(pargs.name[0])
+        elif pargs.cmd in ['list', 'ls']:
+            return self.ls(saved=pargs.saved)
+        elif pargs.cmd == 'load':
+            return self.load(pargs.name[0])
+        elif pargs.cmd == 'save':
+            return self.save(chat_name=pargs.name, mode=pargs.mode)
+        elif pargs.cmd == 'print':
+            return self.print_chat(chat_name=pargs.name, n=pargs.n, mode=pargs.mode)
+        elif pargs.cmd == 'help':
+            pass
+        else:
+            return PARSER.print_help()
 
     def __str__(self):
         pass

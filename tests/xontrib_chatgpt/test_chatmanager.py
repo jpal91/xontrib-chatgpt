@@ -26,6 +26,7 @@ def test_files(temp_home):
 def cm():
     return ChatManager()
 
+
 def test_update_inst_dict(xession, cm):
     insts = [
         ('test', ChatGPT('test')),
@@ -153,3 +154,21 @@ def test_save(xession, cm, test_files, temp_home, cm_events, monkeypatch):
 def test_save_returns_when_key_error(xession, cm):
     res = cm.save('no_exist')
     assert res == 'No chat with name no_exist found.'
+
+@pytest.mark.parametrize(
+    ('action', 'args', 'expected'),
+    [
+        ('add', ['add', 'test'], (('test',), {})),
+        ('ls', ['list'], ((), {'saved': False})),
+        ('ls', ['ls', '-s'], ((), {'saved': True})),
+        ('save', ['save'], ((), {'chat_name': '', 'mode': 'text'})),
+        ('save', ['save', '-m', 'json', 'name'], ((), {'chat_name': 'name', 'mode': 'json'})),     
+        ('load', ['load', 'test'], (('test',), {})),
+        ('print_chat', ['print'], ((), {'chat_name': '', 'n': 10, 'mode': 'color'})),
+        ('print_chat', ['print', '-n', '20', '-m', 'json', 'name'], ((), {'chat_name': 'name', 'n': 20, 'mode': 'json'})),
+    ]
+)
+def test_cli(xession, cm, action, args, expected, monkeypatch):
+    monkeypatch.setattr(f'xontrib_chatgpt.chatmanager.ChatManager.{action}', lambda _, *a, **k: setattr(cm, f'_{action}', (a, k)))
+    cm(args)
+    assert getattr(cm, f'_{action}') == expected
