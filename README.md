@@ -105,6 +105,7 @@ chat-manager?
    - Open up the ability to use other models besides 3.5 and 4
 - **Completions**
    - Helper completions for `chat-manager`
+- **OpenAI Error Handling**
 
 
 ## Credits

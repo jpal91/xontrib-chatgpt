@@ -208,6 +208,7 @@ class ChatManager:
         if not tgt:
             return self.tutorial()
 
+        # TODO: Expand on this more
         if hasattr(self, tgt):
             XSH.help(getattr(self, tgt))
         elif hasattr(ChatGPT, tgt):
@@ -238,6 +239,7 @@ class ChatManager:
                 r"\1", name
             )
 
+        # Creates a tuple of (chat_name, file_name)
         names_saved = [
             (n, f)
             for n, f in [(FIND_NAME_REGEX.sub(r"\1", f), f) for f in saved]
@@ -255,8 +257,9 @@ class ChatManager:
 
     def _choose_from_multiple(self, chats: list[tuple[str, str]]) -> tuple[str, str]:
         """If multiple saved chats are found, allows the user to choose from them"""
+        
         print("Multiple choices found, please choose from:")
-        [print(f"  {i + 1}. {n[0]}") for i, n in enumerate(chats)]
+        [print(f"  {i + 1}. {os.path.basename(n[1])}") for i, n in enumerate(chats)]
 
         while True:
             max_choice = len(chats)
@@ -292,8 +295,12 @@ class ChatManager:
     def on_chat_create_handler(self, inst: ChatGPT) -> None:
         """Handler for on_chat_create. Updates the internal dict with the new chat instance."""
         self._current = hash(inst)
+        
+        # 'name' left blank because at this point the instance init isn't complete,
+        # so variable name is not yet in the global space. 
+        # Updated later in the add method
         self._instances[hash(inst)] = {
-            "name": "",
+            "name": "", 
             "alias": inst.alias,
             "inst": weakref.proxy(inst),
         }
@@ -314,6 +321,7 @@ class ChatManager:
 
     def tutorial(self) -> str:
         """Returns a usage string for the xontrib."""
+
         usage = """
         {BOLD_WHITE}Usage of {BOLD_BLUE}chat-manager{RESET}
         {BOLD_WHITE}---------------------{RESET}
@@ -347,6 +355,10 @@ class ChatManager:
         Any content added to the context block will be sent to {INTENSE_BLUE}ChatGPT{RESET}, allowing
         you to send multi-line messages to {INTENSE_BLUE}ChatGPT{RESET}.
 
+        Each conversation has a separate history, so if you want to start a new conversation on
+        a different topic, simply create a new instance:
+            {YELLOW}>>> {INTENSE_BLUE}chat-manager {INTENSE_GREEN}add {RESET}my_literature_convo
+
         {BOLD_WHITE}Other Useful Commands{RESET}
         {BOLD_WHITE}---------------------{RESET}
 
@@ -360,9 +372,9 @@ class ChatManager:
             {YELLOW}>>> {INTENSE_BLUE}chat-manager {INTENSE_GREEN}print{RESET} gpt
         
         Save a conversation:
-            {YELLOW}>>> {INTENSE_BLUE}gpt {INTENSE_GREEN}-s{RESET}
+            {YELLOW}>>> {INTENSE_BLUE}my_literature_convo {INTENSE_GREEN}-s{RESET}
             {GREEN}# or{RESET}
-            {YELLOW}>>> {INTENSE_BLUE}chat-manager {INTENSE_GREEN}save{RESET} gpt
+            {YELLOW}>>> {INTENSE_BLUE}chat-manager {INTENSE_GREEN}save{RESET} my_literature_convo
         
         You can delete a conversation using {INTENSE_GREEN}Python{RESET} syntax:
             {YELLOW}>>> {INTENSE_PURPLE}del {INTENSE_BLUE}gpt{RESET}
@@ -370,3 +382,11 @@ class ChatManager:
         This will delete the instance, unsaved conversation history, and alias. Be careful!
         """
         return ansi_partial_color_format(usage)
+
+
+# TODO: Print from a saved file
+# TODO:
+#   Save/Load name conflicts
+#   Possibly add a flag to overwrite, or option to replace the old one
+#   or Load chat with similar saved name into different variable name
+#   ie load from 'path' into 'name'

@@ -174,7 +174,6 @@ class ChatGPT(Block):
         """Current convo tokens"""
         return sum(self._tokens)
 
-    @property
     def stats(self) -> None:
         """Prints conversation stats to shell"""
         stats = self._stats()
