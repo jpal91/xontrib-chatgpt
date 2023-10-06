@@ -3,6 +3,7 @@ name: Testing
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   testing:
@@ -10,10 +11,9 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          #- macos-latest
-          #- windows-latest
+          - macos-latest
+          - windows-latest
         python-version:
-          # - "3.8"
           - "3.9"
           - "3.10"
           - "3.11"

@@ -206,9 +206,9 @@ def test_saves_convo(xession, chat, temp_home, mode, file, monkeypatch):
     chat.save_convo(temp_home / "saved" / file, mode=mode)
     assert (temp_home / "saved" / file).exists()
     with open(temp_home / "saved" / file, "r") as f:
-        res = f.read()
+        res = f.read().strip()
     with open(temp_home / "expected" / file, "r") as f:
-        expected = f.read()
+        expected = f.read().strip()
     assert res == expected
 
 
