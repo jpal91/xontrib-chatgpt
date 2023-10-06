@@ -20,6 +20,7 @@ jobs:
         uses: fkirc/skip-duplicate-actions@v5
         with:
           do_not_skip: '["pull_request", "workflow_dispatch"]'
+          concurrent_skipping: 'same_content_newer'
       
   testing:
     needs: pre_job
