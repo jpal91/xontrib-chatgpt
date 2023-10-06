@@ -17,7 +17,7 @@ jobs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
     steps:
       - id: skip_check
-        user: fkirc/skip-duplicate-actions@v5
+        uses: fkirc/skip-duplicate-actions@v5
         with:
           do_not_skip: '["pull_request", "workflow_dispatch"]'
       
