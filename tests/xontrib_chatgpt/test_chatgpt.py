@@ -3,6 +3,7 @@ import json
 import shutil
 import pytest
 from datetime import datetime
+from openai.error import RateLimitError
 from xontrib_chatgpt.chatgpt import ChatGPT, parse_convo, get_token_list
 from xontrib_chatgpt.exceptions import (
     NoApiKeyError,
@@ -117,6 +118,15 @@ def test_chat_raises_error_with_no_chat_model(xession, chat, monkeypatch_openai)
     xession.env["OPENAI_API_KEY"] = "test"
     xession.env["OPENAI_CHAT_MODEL"] = "test"
     with pytest.raises(UnsupportedModelError):
+        chat.chat("test")
+
+def test_chat_catches_openai_errors(xession, chat, monkeypatch):
+    xession.env["OPENAI_API_KEY"] = "test"
+    xession.env["OPENAI_CHAT_MODEL"] = "gpt-3.5-turbo"
+    def raise_it(*_, **__):
+        raise RateLimitError('test')
+    monkeypatch.setattr('xontrib_chatgpt.chatgpt.openai.ChatCompletion.create', raise_it)
+    with pytest.raises(SystemExit):
         chat.chat("test")
 
 

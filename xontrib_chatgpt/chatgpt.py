@@ -1,4 +1,5 @@
 """Main ChatGPT class"""
+import sys
 import os
 import json
 import weakref
@@ -10,6 +11,7 @@ from xonsh.tools import print_color, indent
 from xonsh.contexts import Block
 from xonsh.lazyasd import LazyObject
 from xonsh.ansi_colors import ansi_partial_color_format
+from openai.error import OpenAIError
 
 from xontrib_chatgpt.args import _gpt_parse
 from xontrib_chatgpt.lazyobjs import (
@@ -231,10 +233,14 @@ class ChatGPT(Block):
 
         self.messages.append({"role": "user", "content": text})
 
-        response = openai.ChatCompletion.create(
-            model=model,
-            messages=self.base + self.messages,
-        )
+        try:
+            response = openai.ChatCompletion.create(
+                model=model,
+                messages=self.base + self.messages,
+            )
+        except OpenAIError as e:
+            self.messages.pop()
+            sys.exit(ansi_partial_color_format("{}OpenAI Error{}: {}".format('{BOLD_RED}', '{RESET}', e)))
 
         res_text = response["choices"][0]["message"]
         user_toks, gpt_toks = (
