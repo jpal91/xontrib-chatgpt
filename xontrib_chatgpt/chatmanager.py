@@ -17,6 +17,65 @@ from xontrib_chatgpt.args import _cm_parse
 FIND_NAME_REGEX: Pattern = LazyObject(_FIND_NAME_REGEX, globals(), "FIND_NAME_REGEX")
 PARSER: ArgumentParser = LazyObject(_cm_parse, globals(), "PARSER")
 
+TUTORIAL = """
+        {BOLD_WHITE}Usage of {BOLD_BLUE}chat-manager{RESET}
+        {BOLD_WHITE}---------------------{RESET}
+
+        First, start off by creating a new chat that we'll call 'gpt':
+            {YELLOW}>>> {INTENSE_BLUE}chat-manager {INTENSE_GREEN}add {RESET}gpt
+        
+        This creates a new conversation with {INTENSE_BLUE}ChatGPT{RESET} which you can interact with.
+        Any input and responses will be saved to this instance, so you can continue
+        with your conversation as you please.
+
+        From here, you have several ways to interact. The instance is created as 
+        a {INTENSE_BLUE}Xonsh{RESET} alias, so you can simply call it as such:
+            {YELLOW}>>> {INTENSE_BLUE}gpt{RESET} Hello, how are you?
+
+        Since {INTENSE_BLUE}Xonsh{RESET} aliases can can interact with bash and xsh syntax, you can also
+        use the following:
+            {YELLOW}>>> {INTENSE_BLUE}echo{RESET} {INTENSE_YELLOW}'Hello, how are you?' {INTENSE_WHITE}| {INTENSE_BLUE}gpt{RESET}
+            {YELLOW}>>> {INTENSE_BLUE}gpt{RESET} {INTENSE_WHITE}< {INTENSE_BLUE}echo{RESET} {INTENSE_YELLOW}'Hello, how are you?'
+            {YELLOW}>>> {INTENSE_BLUE}cat{RESET} my_input.txt {INTENSE_WHITE}| {INTENSE_BLUE}gpt{RESET}
+            {YELLOW}>>> {INTENSE_WHITE}my_input ={RESET} {INTENSE_YELLOW}"Hello, how are you?"
+            {YELLOW}>>> {INTENSE_BLUE}echo {INTENSE_PURPLE}@({INTENSE_WHITE}my_input{INTENSE_PURPLE}) {INTENSE_WHITE}| {INTENSE_BLUE}gpt{RESET}
+        
+        Finally, the instance also acts as a {INTENSE_BLUE}Xonsh{RESET} context block:
+            {YELLOW}>>> {INTENSE_GREEN}with{INTENSE_WHITE}! {INTENSE_BLUE}gpt{INTENSE_WHITE}:{RESET}
+            {YELLOW}>>>{RESET}     Can you help me fix my python function?
+            {YELLOW}>>>{RESET}     def hello_world():
+            {YELLOW}>>>{RESET}         return
+            {YELLOW}>>>{RESET}         print("Hello World!")
+        
+        Any content added to the context block will be sent to {INTENSE_BLUE}ChatGPT{RESET}, allowing
+        you to send multi-line messages to {INTENSE_BLUE}ChatGPT{RESET}.
+
+        Each conversation has a separate history, so if you want to start a new conversation on
+        a different topic, simply create a new instance:
+            {YELLOW}>>> {INTENSE_BLUE}chat-manager {INTENSE_GREEN}add {RESET}my_literature_convo
+
+        {BOLD_WHITE}Other Useful Commands{RESET}
+        {BOLD_WHITE}---------------------{RESET}
+
+        Each conversation instance has it's own individual commands as well. Use the following
+        to learn more about the options available to you:
+            {YELLOW}>>> {INTENSE_BLUE}gpt {INTENSE_GREEN}-h{RESET}
+        
+        Print a conversation:
+            {YELLOW}>>> {INTENSE_BLUE}gpt {INTENSE_GREEN}-p{RESET}
+            {GREEN}# or{RESET}
+            {YELLOW}>>> {INTENSE_BLUE}chat-manager {INTENSE_GREEN}print{RESET} gpt
+        
+        Save a conversation:
+            {YELLOW}>>> {INTENSE_BLUE}my_literature_convo {INTENSE_GREEN}-s{RESET}
+            {GREEN}# or{RESET}
+            {YELLOW}>>> {INTENSE_BLUE}chat-manager {INTENSE_GREEN}save{RESET} my_literature_convo
+        
+        You can delete a conversation using {INTENSE_GREEN}Python{RESET} syntax:
+            {YELLOW}>>> {INTENSE_PURPLE}del {INTENSE_BLUE}gpt{RESET}
+        
+        This will delete the instance, unsaved conversation history, and alias. Be careful!
+"""
 
 class ChatManager:
     """Class to manage multiple chats"""
@@ -39,7 +98,7 @@ class ChatManager:
             if self._current is None:
                 return "No active chat!"
             else:
-                return str(self._instances[self._current]["inst"])
+                return self._instances[self._current]["inst"].stats()
 
         if pargs.cmd in ["add", "a", "create"]:
             return self.add(pargs.name[0])
@@ -321,67 +380,7 @@ class ChatManager:
 
     def tutorial(self) -> str:
         """Returns a usage string for the xontrib."""
-
-        usage = """
-        {BOLD_WHITE}Usage of {BOLD_BLUE}chat-manager{RESET}
-        {BOLD_WHITE}---------------------{RESET}
-
-        First, start off by creating a new chat that we'll call 'gpt':
-            {YELLOW}>>> {INTENSE_BLUE}chat-manager {INTENSE_GREEN}add {RESET}gpt
-        
-        This creates a new conversation with {INTENSE_BLUE}ChatGPT{RESET} which you can interact with.
-        Any input and responses will be saved to this instance, so you can continue
-        with your conversation as you please.
-
-        From here, you have several ways to interact. The instance is created as 
-        a {INTENSE_BLUE}Xonsh{RESET} alias, so you can simply call it as such:
-            {YELLOW}>>> {INTENSE_BLUE}gpt{RESET} Hello, how are you?
-
-        Since {INTENSE_BLUE}Xonsh{RESET} aliases can can interact with bash and xsh syntax, you can also
-        use the following:
-            {YELLOW}>>> {INTENSE_BLUE}echo{RESET} {INTENSE_YELLOW}'Hello, how are you?' {INTENSE_WHITE}| {INTENSE_BLUE}gpt{RESET}
-            {YELLOW}>>> {INTENSE_BLUE}gpt{RESET} {INTENSE_WHITE}< {INTENSE_BLUE}echo{RESET} {INTENSE_YELLOW}'Hello, how are you?'
-            {YELLOW}>>> {INTENSE_BLUE}cat{RESET} my_input.txt {INTENSE_WHITE}| {INTENSE_BLUE}gpt{RESET}
-            {YELLOW}>>> {INTENSE_WHITE}my_input ={RESET} {INTENSE_YELLOW}"Hello, how are you?"
-            {YELLOW}>>> {INTENSE_BLUE}echo {INTENSE_PURPLE}@({INTENSE_WHITE}my_input{INTENSE_PURPLE}) {INTENSE_WHITE}| {INTENSE_BLUE}gpt{RESET}
-        
-        Finally, the instance also acts as a {INTENSE_BLUE}Xonsh{RESET} context block:
-            {YELLOW}>>> {INTENSE_GREEN}with{INTENSE_WHITE}! {INTENSE_BLUE}gpt{INTENSE_WHITE}:{RESET}
-            {YELLOW}>>>{RESET}     Can you help me fix my python function?
-            {YELLOW}>>>{RESET}     def hello_world():
-            {YELLOW}>>>{RESET}         return
-            {YELLOW}>>>{RESET}         print("Hello World!")
-        
-        Any content added to the context block will be sent to {INTENSE_BLUE}ChatGPT{RESET}, allowing
-        you to send multi-line messages to {INTENSE_BLUE}ChatGPT{RESET}.
-
-        Each conversation has a separate history, so if you want to start a new conversation on
-        a different topic, simply create a new instance:
-            {YELLOW}>>> {INTENSE_BLUE}chat-manager {INTENSE_GREEN}add {RESET}my_literature_convo
-
-        {BOLD_WHITE}Other Useful Commands{RESET}
-        {BOLD_WHITE}---------------------{RESET}
-
-        Each conversation instance has it's own individual commands as well. Use the following
-        to learn more about the options available to you:
-            {YELLOW}>>> {INTENSE_BLUE}gpt {INTENSE_GREEN}-h{RESET}
-        
-        Print a conversation:
-            {YELLOW}>>> {INTENSE_BLUE}gpt {INTENSE_GREEN}-p{RESET}
-            {GREEN}# or{RESET}
-            {YELLOW}>>> {INTENSE_BLUE}chat-manager {INTENSE_GREEN}print{RESET} gpt
-        
-        Save a conversation:
-            {YELLOW}>>> {INTENSE_BLUE}my_literature_convo {INTENSE_GREEN}-s{RESET}
-            {GREEN}# or{RESET}
-            {YELLOW}>>> {INTENSE_BLUE}chat-manager {INTENSE_GREEN}save{RESET} my_literature_convo
-        
-        You can delete a conversation using {INTENSE_GREEN}Python{RESET} syntax:
-            {YELLOW}>>> {INTENSE_PURPLE}del {INTENSE_BLUE}gpt{RESET}
-        
-        This will delete the instance, unsaved conversation history, and alias. Be careful!
-        """
-        return ansi_partial_color_format(usage)
+        return ansi_partial_color_format(TUTORIAL)
 
 
 # TODO: Print from a saved file

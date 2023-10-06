@@ -164,7 +164,7 @@ class ChatGPT(Block):
 
     def __str__(self):
         stats = self._stats()
-        return "\n".join([f"{k} {v}" for k, v, _ in stats])
+        return "\n".join([f"{k} {v}" for k, v, _, _ in stats])
 
     def __repr__(self):
         return f"ChatGPT(alias={self.alias or None})"
