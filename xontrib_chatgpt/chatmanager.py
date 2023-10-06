@@ -318,49 +318,49 @@ class ChatManager:
         {BOLD_WHITE}---------------------{RESET}
 
         First, start off by creating a new chat that we'll call 'gpt':
-            {YELLOW}>>> {BOLD_BLUE}chat-manager {BOLD_GREEN}add {RESET}gpt
+            {YELLOW}>>> {INTENSE_BLUE}chat-manager {INTENSE_GREEN}add {RESET}gpt
         
-        This creates a new conversation with {BOLD_BLUE}ChatGPT{RESET} which you can interact with.
+        This creates a new conversation with {INTENSE_BLUE}ChatGPT{RESET} which you can interact with.
         Any input and responses will be saved to this instance, so you can continue
         with your conversation as you please.
 
         From here, you have several ways to interact. The instance is created as 
-        a {BOLD_BLUE}Xonsh{RESET} alias, so you can simply call it as such:
-            {YELLOW}>>> {BOLD_BLUE}gpt{RESET} Hello, how are you?
+        a {INTENSE_BLUE}Xonsh{RESET} alias, so you can simply call it as such:
+            {YELLOW}>>> {INTENSE_BLUE}gpt{RESET} Hello, how are you?
 
-        Since {BOLD_BLUE}Xonsh{RESET} aliases can can interact with bash and xsh syntax, you can also
+        Since {INTENSE_BLUE}Xonsh{RESET} aliases can can interact with bash and xsh syntax, you can also
         use the following:
-            {YELLOW}>>> {BOLD_BLUE}echo{RESET} {INTENSE_YELLOW}'Hello, how are you?' {BOLD_WHITE}| {BOLD_BLUE}gpt{RESET}
-            {YELLOW}>>> {BOLD_BLUE}gpt{RESET} {BOLD_WHITE}< {BOLD_BLUE}echo{RESET} {INTENSE_YELLOW}'Hello, how are you?'
-            {YELLOW}>>> {BOLD_BLUE}cat{RESET} my_input.txt {BOLD_WHITE}| {BOLD_BLUE}gpt{RESET}
-            {YELLOW}>>> {BOLD_WHITE}my_input ={RESET} {INTENSE_YELLOW}"Hello, how are you?"
-            {YELLOW}>>> {BOLD_BLUE}echo {BOLD_PURPLE}@({BOLD_WHITE}my_input{BOLD_PURPLE}) {BOLD_WHITE}| {BOLD_BLUE}gpt{RESET}
+            {YELLOW}>>> {INTENSE_BLUE}echo{RESET} {INTENSE_YELLOW}'Hello, how are you?' {INTENSE_WHITE}| {INTENSE_BLUE}gpt{RESET}
+            {YELLOW}>>> {INTENSE_BLUE}gpt{RESET} {INTENSE_WHITE}< {INTENSE_BLUE}echo{RESET} {INTENSE_YELLOW}'Hello, how are you?'
+            {YELLOW}>>> {INTENSE_BLUE}cat{RESET} my_input.txt {INTENSE_WHITE}| {INTENSE_BLUE}gpt{RESET}
+            {YELLOW}>>> {INTENSE_WHITE}my_input ={RESET} {INTENSE_YELLOW}"Hello, how are you?"
+            {YELLOW}>>> {INTENSE_BLUE}echo {INTENSE_PURPLE}@({INTENSE_WHITE}my_input{INTENSE_PURPLE}) {INTENSE_WHITE}| {INTENSE_BLUE}gpt{RESET}
         
-        Finally, the instance also acts as a {BOLD_BLUE}Xonsh{RESET} context block:
-            {YELLOW}>>> {BOLD_GREEN}with{BOLD_WHITE}! {BOLD_BLUE}gpt{BOLD_WHITE}:{RESET}
+        Finally, the instance also acts as a {INTENSE_BLUE}Xonsh{RESET} context block:
+            {YELLOW}>>> {INTENSE_GREEN}with{INTENSE_WHITE}! {INTENSE_BLUE}gpt{INTENSE_WHITE}:{RESET}
             {YELLOW}>>>{RESET}     Can you help me fix my python function?
             {YELLOW}>>>{RESET}     def hello_world():
             {YELLOW}>>>{RESET}         return
             {YELLOW}>>>{RESET}         print("Hello World!")
         
-        Any content added to the context block will be sent to {BOLD_BLUE}ChatGPT{RESET}, allowing
-        you to send multi-line messages to {BOLD_BLUE}ChatGPT{RESET}.
+        Any content added to the context block will be sent to {INTENSE_BLUE}ChatGPT{RESET}, allowing
+        you to send multi-line messages to {INTENSE_BLUE}ChatGPT{RESET}.
 
         {BOLD_WHITE}Other Useful Commands{RESET}
         {BOLD_WHITE}---------------------{RESET}
 
         Each conversation instance has it's own individual commands as well. Use the following
         to learn more about the options available to you:
-            {YELLOW}>>> {BOLD_BLUE}gpt {BOLD_GREEN}-h{RESET}
+            {YELLOW}>>> {INTENSE_BLUE}gpt {INTENSE_GREEN}-h{RESET}
         
         Print a conversation:
-            {YELLOW}>>> {BOLD_BLUE}gpt {BOLD_GREEN}-p{RESET}
+            {YELLOW}>>> {INTENSE_BLUE}gpt {INTENSE_GREEN}-p{RESET}
             {GREEN}# or{RESET}
-            {YELLOW}>>> {BOLD_BLUE}chat-manager {BOLD_GREEN}print{RESET} gpt
+            {YELLOW}>>> {INTENSE_BLUE}chat-manager {INTENSE_GREEN}print{RESET} gpt
         
         Save a conversation:
-            {YELLOW}>>> {BOLD_BLUE}gpt {BOLD_GREEN}-s{RESET}
+            {YELLOW}>>> {INTENSE_BLUE}gpt {INTENSE_GREEN}-s{RESET}
             {GREEN}# or{RESET}
-            {YELLOW}>>> {BOLD_BLUE}chat-manager {BOLD_GREEN}save{RESET} gpt
+            {YELLOW}>>> {INTENSE_BLUE}chat-manager {INTENSE_GREEN}save{RESET} gpt
         """
         return ansi_partial_color_format(usage)
