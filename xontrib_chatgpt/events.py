@@ -7,7 +7,7 @@ chat_events = [
         """
         on_chat_create(inst: ChatGPT) -> None
 
-        Fired when new chat is created. Returns the new instance.
+        Fired when new chat is created. Passes the new instance.
         """,
     ),
     (
@@ -15,7 +15,7 @@ chat_events = [
         """
         on_chat_destroy(inst_hash: int) -> None
 
-        Fired when chat is destroyed. Returns the hash to be removed from
+        Fired when chat is destroyed. Passes the hash to be removed from
         the chat manager.
         """,
     ),
@@ -24,7 +24,7 @@ chat_events = [
         """
         on_chat_used(inst_hash: int) -> None
 
-        Fires when chat is used, i.e. chatgpt is called. Returns the hash
+        Fires when chat is used, i.e. chatgpt is called. Passes the hash
         of the chat instance to update the current chat for the manager.
         """,
     ),
