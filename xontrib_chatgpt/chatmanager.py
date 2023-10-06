@@ -129,6 +129,8 @@ class ChatManager:
         """
         if chat_name in self.chat_names():
             return "Chat with that name already exists!"
+        elif chat_name in XSH.ctx or chat_name in XSH.aliases:
+            return "Variable with that name already exists!"
         inst = ChatGPT(alias=chat_name, managed=True)
         XSH.ctx[chat_name] = inst
         self._instances[hash(inst)]["name"] = chat_name
