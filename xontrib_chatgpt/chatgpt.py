@@ -134,7 +134,7 @@ class ChatGPT(Block):
 
     def __call__(self, args: list[str], stdin: TextIO = None):
         if self._managed:
-            XSH.builtins.events.on_chat_used.fire(inst_hash=hash(self))
+            XSH.builtins.events.on_chat_used.fire(inst=self)
         
         if args:
             pargs = parse.parse_args(args)
@@ -157,7 +157,7 @@ class ChatGPT(Block):
             del XSH.aliases[self.alias]
         
         if self._managed:
-            XSH.builtins.events.on_chat_destroy.fire(inst_hash=hash(self))
+            XSH.builtins.events.on_chat_destroy.fire(inst=self)
 
     def __str__(self):
         stats = self._stats()

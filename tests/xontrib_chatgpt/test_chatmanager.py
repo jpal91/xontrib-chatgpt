@@ -68,16 +68,17 @@ def test_on_chat_destroy_handler(xession, cm_events, cm):
     cm_events.on_chat_destroy(
         lambda *args, **kw: cm.on_chat_destroy_handler(*args, **kw)
     )
-    cm_events.on_chat_destroy.fire(inst_hash=hash(inst))
+    cm_events.on_chat_destroy.fire(inst=inst)
     assert cm._current is None
     assert hash(inst) not in cm._instances
 
 
 def test_on_chat_used_handler(xession, cm_events, cm):
+    inst = ChatGPT("test")
     assert cm._current is None
     cm_events.on_chat_used(lambda *args, **kw: cm.on_chat_used_handler(*args, **kw))
-    cm_events.on_chat_used.fire(inst_hash=1)
-    assert cm._current == 1
+    cm_events.on_chat_used.fire(inst=inst)
+    assert cm._current == hash(inst)
 
 
 def test_add(xession, cm):

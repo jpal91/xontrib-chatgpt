@@ -13,18 +13,18 @@ chat_events = [
     (
         "on_chat_destroy",
         """
-        on_chat_destroy(inst_hash: int) -> None
+        on_chat_destroy(inst: ChatGPT) -> None
 
-        Fired when chat is destroyed. Passes the hash to be removed from
+        Fired when chat is destroyed. Passes the instance to be removed from
         the chat manager.
         """,
     ),
     (
         "on_chat_used",
         """
-        on_chat_used(inst_hash: int) -> None
+        on_chat_used(inst: ChatGPT) -> None
 
-        Fires when chat is used, i.e. chatgpt is called. Passes the hash
+        Fires when chat is used, i.e. chatgpt is called. Passes the instance
         of the chat instance to update the current chat for the manager.
         """,
     ),

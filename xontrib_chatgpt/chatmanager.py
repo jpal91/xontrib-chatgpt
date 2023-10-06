@@ -299,17 +299,19 @@ class ChatManager:
             "inst": weakref.proxy(inst),
         }
 
-    def on_chat_destroy_handler(self, inst_hash: int) -> None:
+    def on_chat_destroy_handler(self, inst: ChatGPT) -> None:
         """Handler for on_chat_destroy. Removes the chat instance from the internal dict."""
+        inst_hash = hash(inst)
+        
         if inst_hash in self._instances:
             del self._instances[inst_hash]
 
         if inst_hash == self._current:
             self._current = None
 
-    def on_chat_used_handler(self, inst_hash: int) -> None:
+    def on_chat_used_handler(self, inst: ChatGPT) -> None:
         """Handler for on_chat_used. Updates the current chat instance."""
-        self._current = inst_hash
+        self._current = hash(inst)
 
     def _usage_str(self) -> str:
         """Returns a usage string for the xontrib."""
