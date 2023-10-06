@@ -9,19 +9,19 @@ __all__ = ()
 
 
 def _load_xontrib_(xsh: XonshSession, **_):
-
     xsh.aliases["chatgpt"] = lambda args, stdin=None: ChatGPT.fromcli(args, stdin)
     xsh.aliases["chatgpt?"] = lambda *_, **__: xsh.help(ChatGPT)
-    
+
     cm = ChatManager()
     xsh.aliases["chat-manager"] = lambda args, stdin=None: cm(args, stdin)
+    xsh.aliases["chat-manager?"] = "chat-manager help"
 
     add_events(xsh, cm)
 
-    if 'abbrevs' in xsh.ctx:
-        xsh.ctx['abbrevs']['cm'] = 'chat-manager'
+    if "abbrevs" in xsh.ctx:
+        xsh.ctx["abbrevs"]["cm"] = "chat-manager"
 
-    return {"ChatGPT": ChatGPT, 'chatmanager': cm}
+    return {"ChatGPT": ChatGPT, "chat_manager": cm}
 
 
 def _unload_xontrib_(xsh: XonshSession, **_):
@@ -31,5 +31,5 @@ def _unload_xontrib_(xsh: XonshSession, **_):
 
     rm_events(xsh)
 
-    if 'abbrevs' in xsh.ctx:
-        del xsh.ctx['abbrevs']['cm']
+    if "abbrevs" in xsh.ctx:
+        del xsh.ctx["abbrevs"]["cm"]

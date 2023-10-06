@@ -1,3 +1,4 @@
+"""Module for ChatManager to manage multiple chats"""
 import os
 import weakref
 from collections import defaultdict
@@ -40,7 +41,7 @@ class ChatManager:
             else:
                 return str(self._instances[self._current]["inst"])
 
-        if pargs.cmd == "add":
+        if pargs.cmd in ["add", "a", "create"]:
             return self.add(pargs.name[0])
         elif pargs.cmd in ["list", "ls"]:
             return self.ls(saved=pargs.saved)
@@ -48,7 +49,7 @@ class ChatManager:
             return self.load(pargs.name[0])
         elif pargs.cmd == "save":
             return self.save(chat_name=pargs.name, mode=pargs.mode)
-        elif pargs.cmd == "print":
+        elif pargs.cmd in ["print", "p"]:
             return self.print_chat(chat_name=pargs.name, n=pargs.n, mode=pargs.mode)
         elif pargs.cmd == "help":
             return self.help(tgt=pargs.target)
@@ -92,13 +93,11 @@ class ChatManager:
                 + "\n  "
                 + "\n  ".join(self._find_saved())
             )
-        
+
         if not self._instances:
             return "No active chats."
 
-        return "\n\n".join(
-            [inst["inst"].stats() for inst in self._instances.values()]
-        )
+        return "\n\n".join([inst["inst"].stats() for inst in self._instances.values()])
 
     def load(self, path_or_name: str) -> str:
         """Load a conversation from a path or a saved chat name
@@ -207,7 +206,7 @@ class ChatManager:
         Optional[str]
         """
         if not tgt:
-            return self._usage_str()
+            return self.tutorial()
 
         if hasattr(self, tgt):
             XSH.help(getattr(self, tgt))
@@ -302,7 +301,7 @@ class ChatManager:
     def on_chat_destroy_handler(self, inst: ChatGPT) -> None:
         """Handler for on_chat_destroy. Removes the chat instance from the internal dict."""
         inst_hash = hash(inst)
-        
+
         if inst_hash in self._instances:
             del self._instances[inst_hash]
 
@@ -313,7 +312,7 @@ class ChatManager:
         """Handler for on_chat_used. Updates the current chat instance."""
         self._current = hash(inst)
 
-    def _usage_str(self) -> str:
+    def tutorial(self) -> str:
         """Returns a usage string for the xontrib."""
         usage = """
         {BOLD_WHITE}Usage of {BOLD_BLUE}chat-manager{RESET}
@@ -364,5 +363,10 @@ class ChatManager:
             {YELLOW}>>> {INTENSE_BLUE}gpt {INTENSE_GREEN}-s{RESET}
             {GREEN}# or{RESET}
             {YELLOW}>>> {INTENSE_BLUE}chat-manager {INTENSE_GREEN}save{RESET} gpt
+        
+        You can delete a conversation using {INTENSE_GREEN}Python{RESET} syntax:
+            {YELLOW}>>> {INTENSE_PURPLE}del {INTENSE_BLUE}gpt{RESET}
+        
+        This will delete the instance, unsaved conversation history, and alias. Be careful!
         """
         return ansi_partial_color_format(usage)

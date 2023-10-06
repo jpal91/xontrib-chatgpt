@@ -1,3 +1,4 @@
+"""Events for xontrib_chatgpt."""
 from xonsh.built_ins import XonshSession
 from xontrib_chatgpt.chatmanager import ChatManager
 
