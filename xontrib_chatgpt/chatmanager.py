@@ -315,7 +315,7 @@ class ChatManager:
         """Returns a usage string for the xontrib."""
         usage = """
         {BOLD_WHITE}Usage of {BOLD_BLUE}chat-manager{RESET}
-        ---------------------
+        {BOLD_WHITE}---------------------{RESET}
 
         First, start off by creating a new chat that we'll call 'gpt':
             {YELLOW}>>> {BOLD_BLUE}chat-manager {BOLD_GREEN}add {RESET}gpt
@@ -345,5 +345,22 @@ class ChatManager:
         
         Any content added to the context block will be sent to {BOLD_BLUE}ChatGPT{RESET}, allowing
         you to send multi-line messages to {BOLD_BLUE}ChatGPT{RESET}.
+
+        {BOLD_WHITE}Other Useful Commands{RESET}
+        {BOLD_WHITE}---------------------{RESET}
+
+        Each conversation instance has it's own individual commands as well. Use the following
+        to learn more about the options available to you:
+            {YELLOW}>>> {BOLD_BLUE}gpt {BOLD_GREEN}-h{RESET}
+        
+        Print a conversation:
+            {YELLOW}>>> {BOLD_BLUE}gpt {BOLD_GREEN}-p{RESET}
+            {GREEN}# or{RESET}
+            {YELLOW}>>> {BOLD_BLUE}chat-manager {BOLD_GREEN}print{RESET} gpt
+        
+        Save a conversation:
+            {YELLOW}>>> {BOLD_BLUE}gpt {BOLD_GREEN}-s{RESET}
+            {GREEN}# or{RESET}
+            {YELLOW}>>> {BOLD_BLUE}chat-manager {BOLD_GREEN}save{RESET} gpt
         """
         return ansi_partial_color_format(usage)

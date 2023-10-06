@@ -5,16 +5,14 @@ def _parse():
     cmd_parser.set_defaults(cmd='send')
     p_group = cmd_parser.add_argument_group(title='Print')
     p_group.add_argument('-p', '--print', dest='cmd', const='print', action='store_const', help='Prints the conversation')
-    p_group.add_argument('-n', type=int, default=10, help='Number of conversations to print')
+    p_group.add_argument('-n', type=int, default=10, help='Number of messasges to print. Default is 10. Use 0 for all.')
     p_group.add_argument('-m', '--mode', type=str, default='color', choices=['color', 'no-color', 'json'], help='Mode to print or save the conversation. Default is color')
     s_group = cmd_parser.add_argument_group(title='Save')
     s_group.add_argument('-s', '--save', dest='cmd', const='save', action='store_const', help='Saves the conversation')
-    s_group.add_argument('-P', '--path', type=str, default='', help='Path to save the conversation. Default is $XONSH_DATA_DIR/chatgpt')
-    s_group.add_argument('--name', type=str, default='', help='Name of the conversation file. Default is chatgpt')
-    s_group.add_argument('-t', '--type', type=str, default='text', choices=['text', 'json'], help='Type of the conversation file. Default is text')
-    # ps_group = cmd_parser.add_argument_group(title='Print or Save')
-    # ps_group.add_argument('-m', '--mode', type=str, default='color', choices=['color', 'no-color', 'json'], help='Mode to print or save the conversation. Default is color')
-    cmd_parser.add_argument('text', nargs='*', default=None, help='Text to send to ChatGPT. Will be ignored when other cmd is used')
+    s_group.add_argument('-P', '--path', type=str, default='', help='File path to save the conversation. Default is $XONSH_DATA_DIR/chatgpt.')
+    s_group.add_argument('--name', type=str, default='', help='Name of the conversation file. Default is chatgpt. Ignored when path is specified.')
+    s_group.add_argument('-t', '--type', type=str, default='text', choices=['text', 'json'], help='Type of the conversation file. Default is text.')
+    cmd_parser.add_argument('text', nargs='*', default=None, help='Text to send to ChatGPT. Will be ignored when other cmd is used.')
 
     return cmd_parser
 
