@@ -87,6 +87,7 @@ chat-manager help
 - Direct usage of `ChatGPT` will not be deprecated, yet, but the plan is to have `chat-manager` be the defacto usage of this package
 - The one-off alias `chatgpt` is also available, but will be deprecated in later versions
 - To see the original documentation on these, please visit the [old usage](/docs/old_usage.md) docs
+- Three new `xonsh` events were added to help manage changes see [events](/docs/events.md) for details
 
 ## Future Plans
 - **Streaming Responses**
@@ -95,5 +96,9 @@ chat-manager help
 
 ## Credits
 
-This package was created with [xontrib template](https://github.com/xonsh/xontrib-template).
+- This package was created with [xontrib template](https://github.com/xonsh/xontrib-template).
+- [Xonsh Documentation](https://xon.sh/contents.html)
+- [prompt_toolkit](https://python-prompt-toolkit.readthedocs.io/)
+- [Pygments](https://pygments.org/docs/)
+- [Awesome Xontribs](https://github.com/xonsh/awesome-xontribs) - Much inspiration was taken from many projects in this fantastic repo
 

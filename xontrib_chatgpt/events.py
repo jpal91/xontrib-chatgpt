@@ -7,7 +7,8 @@ chat_events = [
         """
         on_chat_create(inst: ChatGPT) -> None
 
-        Fired when new chat is created. Passes the new instance.
+        Fired when new chat is created. Passes the new instance to be added to
+        the chat manager.
         """,
     ),
     (
