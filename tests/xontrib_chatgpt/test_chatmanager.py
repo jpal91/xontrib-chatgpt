@@ -92,6 +92,10 @@ def test_add_with_conflicting_name(xession, cm):
     cm.add("test")
     res = cm.add("test")
     assert res == "Chat with that name already exists!"
+    xession.ctx['glob'] = 'something'
+    res = cm.add('glob')
+    assert 'glob' in xession.ctx
+    assert res == "Variable with that name already exists!"
 
 
 def test_ls(xession, cm_events, cm, monkeypatch, capsys):
