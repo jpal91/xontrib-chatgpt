@@ -35,7 +35,7 @@ class DummyAI:
     def create(self, **_):
         return {
             "choices": [{"message": {"content": "test", "role": "assistant"}}],
-            "usage": {"prompt_tokens": 1, 'completion_tokens': 1},
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1},
         }
 
 
@@ -46,10 +46,18 @@ def temp_home(tmpdir_factory):
     home.mkdir("saved")
     data_dir = home.mkdir("data_dir")
     data_dir.mkdir("chatgpt")
-    fixtures = ["color_convo.txt", "no_color_convo.txt", "convo.json", "convo2.json", "long_convo.txt"]
+    fixtures = [
+        "color_convo.txt",
+        "no_color_convo.txt",
+        "convo.json",
+        "convo2.json",
+        "long_convo.txt",
+    ]
     for f in fixtures:
         shutil.copy(f"tests/fixtures/{f}", f"{home}/expected/{f}")
-    shutil.copy(f'tests/fixtures/no_color_convo.txt', f'{data_dir}/chatgpt/no_color_convo.txt')
+    shutil.copy(
+        f"tests/fixtures/no_color_convo.txt", f"{data_dir}/chatgpt/no_color_convo.txt"
+    )
     yield home
 
 
@@ -261,23 +269,35 @@ def test_cli_execution(xession, chat_w_alias, capsys, monkeypatch_openai):
     assert "ChatGPT" in out[0]
     assert "test" in out[1]
 
-def test_cli_execution_print(xession, chat_w_alias, capsys, monkeypatch, monkeypatch_openai):
-    monkeypatch.setattr("xontrib_chatgpt.chatgpt.ChatGPT.print_convo", lambda _, n, mode: print('print_convo', n, mode))
+
+def test_cli_execution_print(
+    xession, chat_w_alias, capsys, monkeypatch, monkeypatch_openai
+):
+    monkeypatch.setattr(
+        "xontrib_chatgpt.chatgpt.ChatGPT.print_convo",
+        lambda _, n, mode: print("print_convo", n, mode),
+    )
     xession.aliases["gpt"](["-p"])
     out, err = capsys.readouterr()
-    assert out.strip() == 'print_convo 10 color'
+    assert out.strip() == "print_convo 10 color"
     xession.aliases["gpt"]("-p -n 5 -m no-color".split())
     out, err = capsys.readouterr()
-    assert out.strip() == 'print_convo 5 no-color'
+    assert out.strip() == "print_convo 5 no-color"
 
-def test_cli_execution_save(xession, chat_w_alias, capsys, monkeypatch, monkeypatch_openai):
-    monkeypatch.setattr("xontrib_chatgpt.chatgpt.ChatGPT.save_convo", lambda _, path, name, mode: print('save_convo', path, name, mode))
+
+def test_cli_execution_save(
+    xession, chat_w_alias, capsys, monkeypatch, monkeypatch_openai
+):
+    monkeypatch.setattr(
+        "xontrib_chatgpt.chatgpt.ChatGPT.save_convo",
+        lambda _, path, name, mode: print("save_convo", path, name, mode),
+    )
     xession.aliases["gpt"](["-s"])
     out, err = capsys.readouterr()
-    assert out.strip() == 'save_convo   text'
+    assert out.strip() == "save_convo   text"
     xession.aliases["gpt"]("-s -P path -n 5 -t json --name name".split())
     out, err = capsys.readouterr()
-    assert out.strip() == 'save_convo path name json'
+    assert out.strip() == "save_convo path name json"
 
 
 def test_cli_execution_pipe(xession, chat_w_alias, capsys, monkeypatch_openai):
@@ -300,61 +320,91 @@ def test_enter_exit(xession, chat, capsys, monkeypatch_openai):
     assert "ChatGPT" in out[0]
     assert "test" in out[1]
 
+
 def test_loads_from_convo(xession, temp_home):
-    chat_file = temp_home / 'expected' / 'no_color_convo.txt'
+    chat_file = temp_home / "expected" / "no_color_convo.txt"
     new_cls = ChatGPT.fromconvo(chat_file)
     assert isinstance(new_cls, ChatGPT)
-    assert 'Please write me a hello world function' in new_cls.messages[0]['content']
+    assert "Please write me a hello world function" in new_cls.messages[0]["content"]
+
 
 def test_loads_from_convo_in_default_dir(xession, temp_home):
-    xession.env['XONSH_DATA_DIR'] = str(temp_home / 'data_dir')
-    new_cls = ChatGPT.fromconvo('no_color_convo.txt')
+    xession.env["XONSH_DATA_DIR"] = str(temp_home / "data_dir")
+    new_cls = ChatGPT.fromconvo("no_color_convo.txt")
     assert isinstance(new_cls, ChatGPT)
-    assert 'Please write me a hello world function' in new_cls.messages[0]['content']
+    assert "Please write me a hello world function" in new_cls.messages[0]["content"]
+
 
 def test_loads_from_convo_raises_file_not_found(xession, temp_home):
     with pytest.raises(FileNotFoundError):
-        ChatGPT.fromconvo('invalid.txt')
+        ChatGPT.fromconvo("invalid.txt")
 
 
 # parse_convo
 
+
 def test_parses_json(xession, temp_home):
-    json_path = temp_home / 'expected' / 'convo.json'
+    json_path = temp_home / "expected" / "convo.json"
     with open(json_path) as f:
         exp_json = f.read()
 
     assert parse_convo(exp_json) == json.loads(exp_json)
 
+
 def test_parses_text(xession, temp_home):
-    text_path = temp_home / 'expected' / 'long_convo.txt'
+    text_path = temp_home / "expected" / "long_convo.txt"
     with open(text_path) as f:
         exp_text = f.read()
-    
+
     res = parse_convo(exp_text)
     assert len(res) == 6
 
     for r in res:
-        assert r['role'] in ['user', 'assistant']
-        assert r['content'] != ''
-
-@pytest.mark.skip()
-def test_parses_color_text(xession, temp_home):
-    text_path = temp_home / 'expected' / 'color_convo.txt'
-    with open(text_path) as f:
-        exp_text = f.read()
-    
-    res = parse_convo(exp_text)
-    assert len(res) == 2
-    assert '\x1b' not in res[0]['content']
+        assert r["role"] in ["user", "assistant"]
+        assert r["content"] != ""
 
 
 # get_token_list
 
+
 def test_get_token_list(xession, temp_home):
-    json_path = temp_home / 'expected' / 'convo2.json'
+    json_path = temp_home / "expected" / "convo2.json"
     with open(json_path) as f:
         exp_json = json.load(f)
     res = get_token_list(exp_json)
     assert len(res) == 7
     assert sum(res) == 835
+
+
+@pytest.fixture
+def inc_test(xession):
+    xession.ctx["test"] = 0
+
+    def inc_test(**kw):
+        xession.ctx["test"] += 1
+
+    return inc_test
+
+
+def test_on_chat_create_handler(xession, cm_events, inc_test):
+    cm_events.on_chat_create(inc_test)
+    inst = ChatGPT(managed=True)
+    assert xession.ctx["test"] == 1
+
+
+def test_on_chat_change(xession, cm_events, inc_test):
+    cm_events.on_chat_create(inc_test)
+    inst = ChatGPT(managed=True)
+    assert xession.ctx["test"] == 1
+    cm_events.on_chat_used(inc_test)
+    inst([])
+    assert xession.ctx["test"] == 2
+
+
+def test_on_chat_destroy_handler(xession, cm_events, inc_test):
+    cm_events.on_chat_create(inc_test)
+    inst = ChatGPT(managed=True)
+    assert xession.ctx["test"] == 1
+    cm_events.on_chat_destroy(inc_test)
+    del inst
+    assert xession.ctx["test"] == 2

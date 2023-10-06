@@ -11,14 +11,14 @@ from xonsh.contexts import Block
 from xonsh.lazyasd import LazyObject
 from xonsh.ansi_colors import ansi_partial_color_format
 
-from xontrib_chatgpt.args import _parse
-from xontrib_chatgpt.lazyobjs import(
+from xontrib_chatgpt.args import _gpt_parse
+from xontrib_chatgpt.lazyobjs import (
     _openai,
     _MULTI_LINE_CODE,
     _SINGLE_LINE_CODE,
     _PYGMENTS,
     _markdown,
-    _tiktoken
+    _tiktoken,
 )
 from xontrib_chatgpt.exceptions import (
     NoApiKeyError,
@@ -31,11 +31,9 @@ openai = LazyObject(_openai, globals(), "openai")
 tiktoken = LazyObject(_tiktoken, globals(), "tiktoken")
 MULTI_LINE_CODE = LazyObject(_MULTI_LINE_CODE, globals(), "MULTI_LINE_CODE")
 SINGLE_LINE_CODE = LazyObject(_SINGLE_LINE_CODE, globals(), "SINGLE_LINE_CODE")
-# CHAT_REGEX = LazyObject(_CHAT_REGEX, globals(), "CHAT_REGEX")
-# COLOR_REGEX = LazyObject(_COLOR_REGEX, globals(), "COLOR_REGEX")
 PYGMENTS = LazyObject(_PYGMENTS, globals(), "PYGMENTS")
 markdown = LazyObject(_markdown, globals(), "markdown")
-parse = LazyObject(_parse, globals(), "parse")
+parse = LazyObject(_gpt_parse, globals(), "parse")
 
 DOCSTRING = """\
 Allows for communication with ChatGPT from the xonsh shell.
@@ -97,28 +95,37 @@ class ChatGPT(Block):
 
     __xonsh_block__ = str
 
-    def __init__(self, alias: str = "") -> None:
+    def __init__(self, alias: str = "", managed: bool = False) -> None:
         """
         Initializes the ChatGPT instance
 
-        Args:
-            alias (str, optional): Alias to use for the instance. Defaults to ''.
-                Will automatically register a xonsh alias under XSH.aliases[alias] if provided.
+        Parameters
+        ----------
+        alias : str, optional
+            Alias to use for the instance. Defaults to ''.
+            Will automatically register a xonsh alias under XSH.aliases[alias] if provided.
         """
 
         self.alias = alias
         self.base: list[dict[str, str]] = [
             {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "system", "content": "If your responses include code, make sure to wrap it in a markdown code block with the appropriate language. \n Example: \n ```python \n print('Hello World!') \n ```"},
+            {
+                "role": "system",
+                "content": "If your responses include code, make sure to wrap it in a markdown code block with the appropriate language. \n Example: \n ```python \n print('Hello World!') \n ```",
+            },
         ]
         self.messages: list[dict[str, str]] = []
         self._tokens: list = []
         self._max_tokens = 3000
+        self._managed = managed
 
         if self.alias:
             # Make sure the __del__ method is called despite the alias pointing to the instance
             ref = weakref.proxy(self)
             XSH.aliases[self.alias] = lambda args, stdin=None: ref(args, stdin)
+
+        if managed:
+            XSH.builtins.events.on_chat_create.fire(inst=self)
 
     def __enter__(self):
         res = self.chat(self.macro_block.strip())
@@ -129,19 +136,22 @@ class ChatGPT(Block):
         del self.macro_block
 
     def __call__(self, args: list[str], stdin: TextIO = None):
+        if self._managed:
+            XSH.builtins.events.on_chat_used.fire(inst=self)
+
         if args:
             pargs = parse.parse_args(args)
         elif stdin:
             pargs = parse.parse_args(stdin.read().strip().split())
         else:
             return
-        
-        if pargs.cmd == 'send':
+
+        if pargs.cmd == "send":
             res = self.chat(" ".join(pargs.text))
             self._print_res(res)
-        elif pargs.cmd == 'print':
+        elif pargs.cmd == "print":
             self.print_convo(pargs.n, pargs.mode)
-        elif pargs.cmd == 'save':
+        elif pargs.cmd == "save":
             self.save_convo(pargs.path, pargs.name, pargs.type)
 
     def __del__(self):
@@ -149,9 +159,12 @@ class ChatGPT(Block):
             print(f"Deleting {self.alias}")
             del XSH.aliases[self.alias]
 
+        if self._managed:
+            XSH.builtins.events.on_chat_destroy.fire(inst=self)
+
     def __str__(self):
         stats = self._stats()
-        return "\n".join([f"{k} {v}" for k, v, _ in stats])
+        return "\n".join([f"{k} {v}" for k, v, _, _ in stats])
 
     def __repr__(self):
         return f"ChatGPT(alias={self.alias or None})"
@@ -161,38 +174,45 @@ class ChatGPT(Block):
         """Current convo tokens"""
         return sum(self._tokens)
 
-    @property
     def stats(self) -> None:
         """Prints conversation stats to shell"""
         stats = self._stats()
-        for k, v, c in stats:
-            print_color("{}{}{} {}".format(c, k, "{BOLD_WHITE}", v))
+        return "\n".join(
+            [
+                ansi_partial_color_format(
+                    "{} {}{}{} {}".format(tok, col, key, "{BOLD_WHITE}", val)
+                )
+                for key, val, col, tok in stats
+            ]
+        )
 
     def _stats(self) -> str:
         """Helper for stats and __str__"""
         stats = [
-            ("Alias:", f"{self.alias or None}", "{BOLD_YELLOW}"),
-            ("Tokens:", self.tokens, "{BOLD_GREEN}"),
-            ("Trim After:", f"{self._max_tokens} Tokens", "{BOLD_BLUE}"),
-            ("Mode:", XSH.env.get("OPENAI_CHAT_MODEL", "gpt-3.5-turbo"), "{BOLD_BLUE}"),
-            ("Messages:", len(self.messages), "{BOLD_BLUE}"),
+            ("Alias:", f"{self.alias or None}", "{BOLD_GREEN}", "🤖"),
+            ("Tokens:", self.tokens, "{BOLD_BLUE}", "🪙"),
+            ("Trim After:", f"{self._max_tokens} Tokens", "{BOLD_BLUE}", "🔪"),
+            ("Messages:", len(self.messages), "{BOLD_BLUE}", "📨"),
         ]
         return stats
 
     def chat(self, text: str) -> str:
         """
         Main chat function for interfacing with OpenAI API
-        
-        This method is not meant to be called directly as calling the 
+
+        This method is not meant to be called directly as calling the
             instance will call this method and print to the cli.
-        However, it is avaliable and can be useful for assigning 
+        However, it is avaliable and can be useful for assigning
             the response to a variable.
-        
-        Args:
-            text (str): Text to send to ChatGPT
-        
-        Returns:
-            str: Response from ChatGPT
+
+        Parameters
+        ----------
+        text : str
+            Text to send to ChatGPT
+
+        Returns
+        -------
+        str: Response from ChatGPT
 
         """
 
@@ -217,7 +237,10 @@ class ChatGPT(Block):
         )
 
         res_text = response["choices"][0]["message"]
-        user_toks, gpt_toks = response["usage"]["prompt_tokens"], response['usage']['completion_tokens']
+        user_toks, gpt_toks = (
+            response["usage"]["prompt_tokens"],
+            response["usage"]["completion_tokens"],
+        )
 
         self.messages.append(res_text)
         self._tokens.extend([user_toks, gpt_toks])
@@ -287,18 +310,24 @@ class ChatGPT(Block):
     def print_convo(self, n: int = 10, mode: str = "color") -> str:
         """Prints the current conversation to shell, up to n last items, in the specified mode
 
-        Args:
-            n (int, optional): Number of items to print, starting from the last response. Defaults to 10. 0 == all.
-            mode (str, optional): Mode to print in. Defaults to 'color'. Options - 'color', 'no-color', 'json'
+        Parameters
+        ----------
+        n : int, optional
+            Number of messages to print. Defaults to 10.
+            If n is 0, the entire conversation will be printed.
+        mode : str, optional
+            Mode to print the conversation in. Defaults to 'color'.
+            Options - 'color', 'no-color', 'json'
 
-        Examples:
+        Examples
+        --------
             >>> chatgpt.print_convo(5, 'color') # prints the last 5 items of the conversation, with color
             >>> chatgpt.print_convo(0, 'json') # prints the entire conversation as a JSON string
             >>> chatgpt.print_convo(mode='no-color') # prints the last 10 items of the conversation,
                     without color or pygments markdown formatting
         """
 
-        rtn_str = '\n'
+        rtn_str = "\n"
 
         if not self.messages:
             raise NoConversationsError()
@@ -316,49 +345,67 @@ class ChatGPT(Block):
                 f'Invalid mode: "{mode}" -- options are "color", "no-color", and "json"'
             )
         print(rtn_str)
-    
-    def _get_default_path(self, name: str = '', json_mode:bool=False) -> str:
+
+    def _get_default_path(self, name: str = "", json_mode: bool = False) -> str:
         """Helper method to get the default path for saving conversations"""
         user = XSH.env.get("USER", "user")
-        data_dir = XSH.env.get("XONSH_DATA_DIR", os.path.join(os.path.expanduser("~"), ".local", "share", "xonsh"))
+        data_dir = XSH.env.get(
+            "XONSH_DATA_DIR",
+            os.path.join(os.path.expanduser("~"), ".local", "share", "xonsh"),
+        )
         chat_dir = os.path.join(data_dir, "chatgpt")
 
         if not os.path.exists(chat_dir):
             os.makedirs(chat_dir)
-        
+
         date, idx = datetime.now().strftime("%Y-%m-%d"), 1
-        path_prefix, ext = os.path.join(chat_dir, f"{user}_{name or self.alias or 'chatgpt'}_{date}"), ".json" if json_mode else ".txt"
-        
-        if os.path.exists(f'{path_prefix}{ext}'):
+        path_prefix, ext = (
+            os.path.join(chat_dir, f"{user}_{name or self.alias or 'chatgpt'}_{date}"),
+            ".json" if json_mode else ".txt",
+        )
+
+        if os.path.exists(f"{path_prefix}{ext}"):
             while os.path.exists(path_prefix + f"_{idx}{ext}"):
                 idx += 1
             path = path_prefix + f"_{idx}{ext}"
         else:
             path = path_prefix + f"{ext}"
-        
+
         return path
 
-    def save_convo(self, path: str = '', name: str = '', mode: str = "text") -> None:
+    def save_convo(self, path: str = "", name: str = "", mode: str = "text") -> None:
         """
         Saves conversation to path or default xonsh data directory
-        
-        Args:
-            path (str, optional): Path to save conversation to. Defaults to ''.
-            name (str, optional): Name to use in the filename. Defaults to ''.
-            mode (str, optional): Mode to save in. Defaults to 'text'. Options - 'text', 'json'
 
-            When path is specified, name will be ignored.
-        
+        Parameters
+        ----------
+        path : str, optional
+            File path to save the conversation. Defaults to ''.
+            If path is not specified, the conversation will be saved to the
+            default xonsh data directory.
+        name : str, optional
+            Name of the conversation file. Defaults to ''.
+            Ignored when path is specified.
+        mode : str, optional
+            Type of the conversation file. Defaults to 'text'.
+            Options - 'text', 'json'
+
+        Returns
+        -------
+        None
+
+        Notes
+        -----
         Default File Path Structure:
             $XONSH_DATA_DIR/chatgpt/$USER_[name|alias|'chatgpt']_[date]_[index].[text|json]
         """
         if not self.messages:
             raise NoConversationsError()
-        
+
         if not path:
             path = self._get_default_path(name=name, json_mode=mode == "json")
 
-        if mode == 'text':
+        if mode == "text":
             convo = self._get_printed_convo(0, color=False)
         elif mode == "json":
             convo = self._get_json_convo(0)
@@ -380,13 +427,20 @@ class ChatGPT(Block):
 
     @staticmethod
     def fromcli(args: list[str], stdin: TextIO = None) -> None:
-        """\
-        Helper method for one off conversations from the shell.
+        """Helper method for one off conversations from the shell.
         Conversation will not save to instance, and will not be saved to history.
         Not meant to be called directly, but from a xonsh alias.
-            Alias 'chatgpt' is automatically registered when the xontrib is loaded.
+        Alias 'chatgpt' is automatically registered when the xontrib is loaded.
 
-        Usage:
+        Parameters
+        ----------
+        args : list[str]
+            Arguments passed from the shell
+        stdin : TextIO, optional
+            Text from stdin, by default None
+
+        Usage
+        -----
             >>> chatgpt [text] # text will be sent to ChatGPT
             >>> echo [text] | chatgpt # text from stdin will be sent to ChatGPT
             >>> cat [text file] | chatgpt # text from file will be sent to ChatGPT
@@ -398,32 +452,63 @@ class ChatGPT(Block):
     @staticmethod
     def getdoc() -> str:
         return DOCSTRING
-    
+
     @classmethod
-    def fromconvo(cls, path, alias=''):
-        """Loads a conversation from a saved file and returns new instance"""
+    def fromconvo(cls, path, alias: str = "", managed: bool = False) -> "ChatGPT":
+        """Loads a conversation from a saved file and returns new instance
+
+        Parameters
+        ----------
+        path : str
+            Path to the conversation file
+        alias : str, optional
+            Alias to use for the instance. Defaults to ''.
+        managed : bool, optional
+            Whether or not to register the instance with the chat manager.
+            Defaults to False.
+
+        Returns
+        -------
+        ChatGPT
+            New instance with the loaded conversation
+        """
         if not os.path.exists(path):
             bname = os.path.basename(path)
-            default_dir = XSH.env.get("XONSH_DATA_DIR", os.path.join(os.path.expanduser("~"), ".local", "share", "xonsh"))
+            default_dir = XSH.env.get(
+                "XONSH_DATA_DIR",
+                os.path.join(os.path.expanduser("~"), ".local", "share", "xonsh"),
+            )
             guess_name = os.path.join(default_dir, "chatgpt", bname)
-            
+
             if not os.path.exists(guess_name):
-                raise FileNotFoundError(f'File not found: {path}')
+                raise FileNotFoundError(f"File not found: {path}")
             else:
                 path = guess_name
-        
-        with open(path, 'r') as f:
+
+        with open(path, "r") as f:
             convo = f.read()
-        
+
         messages = parse_convo(convo)
-        new_cls = cls(alias=alias)
+        new_cls = cls(alias=alias, managed=managed)
         new_cls.messages = messages
         new_cls._tokens = get_token_list(messages)
-        
+
         return new_cls
 
+
 def parse_convo(convo: str) -> list[dict[str, str]]:
-    """Parses a conversation from a saved file"""
+    """Parses a conversation from a saved file
+
+    Parameters
+    ----------
+    convo : str
+        Conversation to parse
+
+    Returns
+    -------
+    list[dict[str, str]]
+        Parsed conversation
+    """
     try:
         convo = json.loads(convo)
     except json.JSONDecodeError:
@@ -431,7 +516,7 @@ def parse_convo(convo: str) -> list[dict[str, str]]:
     else:
         return convo
 
-    convo = convo.split('\n')
+    convo = convo.split("\n")
     messages, user, idx, n = [], True, 0, len(convo)
 
     # Couldn't figure out how to do this with regex, so while loop instead
@@ -440,24 +525,36 @@ def parse_convo(convo: str) -> list[dict[str, str]]:
             idx += 1
             continue
 
-        msg = {'role': 'user' if user else 'assistant', 'content': ''}
+        msg = {"role": "user" if user else "assistant", "content": ""}
         idx += 1
 
         if idx == n:
             break
 
-        while idx < n and convo[idx].startswith(' '):
-            msg['content'] += convo[idx] + '\n'
+        while idx < n and convo[idx].startswith(" "):
+            msg["content"] += convo[idx] + "\n"
             idx += 1
-        
-        msg['content'] = dedent(msg['content'])
+
+        msg["content"] = dedent(msg["content"])
         messages.append(msg)
         user = not user
-    
+
     return messages
 
+
 def get_token_list(messages: list[dict[str, str]]) -> list[int]:
-    """Gets the chat tokens for the loaded conversation"""
+    """Gets the chat tokens for the loaded conversation
+
+    Parameters
+    ----------
+    messages : list[dict[str, str]]
+        Messages from the conversation
+
+    Returns
+    -------
+    list[int]
+        List of tokens for each message
+    """
     tokens_per_message = 3
     tokens = [3]
 
@@ -467,7 +564,5 @@ def get_token_list(messages: list[dict[str, str]]) -> list[int]:
         for v in message.values():
             num_tokens += len(tiktoken.encode(v))
         tokens.append(num_tokens)
-    
+
     return tokens
-        
-        

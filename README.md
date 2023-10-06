@@ -6,7 +6,7 @@ Gives the ability to use ChatGPT directly from the command line
 If you like the idea click ⭐ on the repo and <a href="https://twitter.com/intent/tweet?text=Nice%20xontrib%20for%20the%20xonsh%20shell!&url=https://github.com/jpal91/xontrib-chatgpt" target="_blank">tweet</a>.
 </p>
 
-![Chat Screenshot](assets/chatgpt_xonsh.png)
+![Chat Screenshot](assets/chatgpt_xonsh_v013.png)
 
 ## Installation
 
@@ -44,143 +44,75 @@ If this is not set, it will default to `gpt-3.5-turbo`. Currently the only accep
 
 ## Usage
 
-`xontrib-chatgpt` was designed to be versatile. To that end, it has capabilities of a `python` function, a `bash`-like function, and a `xonsh` context block.
+**NEW in Version 0.1.3**
 
-#### Basic
-
-When loaded, an alias `chatgpt` will automatically be added into your shell. You can use this for simple one-off questions -
+Use `chat-manager` to easily create and manage new chats
 
 ```xsh
-chatgpt Can you write me a simple 'hello world' function in python?
+chat-manager add gpt
+gpt "Hello, what's your name?"
 # ChatGPT responds here
 ```
 
-#### Context Manager
-
-To carry on a conversation with `ChatGPT`, first assign the `ChatGPT` class to a variable
-
-```py
-gpt = ChatGPT()
-```
-
-This package extends the built-in `Block` context manager capabilities from `xonsh`, allowing for multi-line inputs to be sent to the `ChatGPT` api
+Use your chat as a callable alias or `xonsh` context block
 
 ```xsh
+echo "Hello, what's your name" | gpt
+gpt < input.txt
+echo @(myvar) | gpt
+
+# The entire contents of the block is sent as text to ChatGPT
 with! gpt:
-   My python function below is broken, can you help me fix it?
+   Can you help me fix my python function?
 
    def hello_world():
-      return None
-      print('Hello world!')
-
-# ChatGPT responds here
-# Any other inputs added will be included in the messages sent to ChatGPT
-
-with! gpt:
-   ...
+      return
+      print('Hello, world!')
 ```
 
-#### With Alias
-
-To unlock the full range of conversation options, you can optionally assign an `alias` to the instance -
+To get see more CLI options:
 
 ```xsh
-# Best practice is to use the same name as your variable assignment
-gpt = ChatGPT(alias='gpt')
-
-# The following is automatically ran for you...
-# aliases['gpt'] = lambda args, stdin=None: gpt(args, stdin)
-
-# Then use as a context manager...
-with! gpt:
-   Hello! Tell me more about yourself.
-
-# Or as an alias function...
-gpt Hello! Tell me more about yourself.
-echo 'Hello! Tell me more about yourself.' | gpt
-
-# Go crazy with it!
-cat my_input.txt | gpt
-my_next_input = $(echo 'Hello! Tell me more about yourself')
-echo @(my_next_input) | gpt
+chat-manager -h
 ```
 
-When your variable/conversation is deleted, the registered `alias` is automatically deleted as well
+To get a quick tutorial:
 
 ```xsh
-del gpt
-Deleting alias gpt
-```
-
-### Get Help
-
-For class/instance related help -
-
-```xsh
-ChatGPT?
-gpt = ChatGPT()
-gpt?
-```
-
-For cli related help
-```xsh
-chatgpt -h
-gpt = ChatGPT()
-gpt -h
-```
-
-### Additional Capabilities
-
-#### Printing Convo
-
-To print out your conversation to the shell, use one of the following -
-
-```xsh
-gpt = ChatGPT('gpt')
-
-gpt.print_convo()
+chat-manager help
 # or
-gpt -p
+chat-manager?
 ```
 
-See `gpt -h` or `gpt.print_convo?` for additional help and options
+⭐ **BONUS**: If [xontrib-abbrevs](https://github.com/xonsh/xontrib-abbrevs) is loaded, use `cm` to expand to `chat-manager`
 
-#### Saving Convo
-
-To save your current conversation -
-
-```xsh
-gpt = ChatGPT('gpt')
-
-gpt.save_convo(path='path/to/my_convo.txt')
-# or
-gpt -s -P 'path/to/my_convo.txt'
-```
-
-See `gpt -h` or `gpt.save_convo?` for additional help and options
-
-#### Loading Convo
-
-You can load a past conversation to a variable using the class method `ChatGPT.fromconvo`
-
-```xsh
-gpt = ChatGPT.fromconvo(path='path/to/my_convo.txt', alias='gpt')
-```
+#### Version 0.1.3 Notes
+- `chat-manager` is meant to replace prior direct usage of utilizing the `ChatGPT` python class directly
+- Direct usage of `ChatGPT` will not be deprecated, yet, but the plan is to have `chat-manager` be the defacto usage of this package
+- `chat-manager` is also getting passed to the global ctx for debugging purposes for now as `chat_manager`, but will later be deprecated
+- The one-off alias `chatgpt` is also available, but will be deprecated in later versions
+- To see the original documentation on these, please visit the [old usage](/docs/old_usage.md) docs
+- Three new `xonsh` events were added to help manage changes see [events](/docs/events.md) for details
 
 ## Future Plans
-- **Chat Manager**
-   - Currently, the package has quite a few options for interaction, but some overlap and aren't very concise. The plan is to create a 'one-stop-shop' for interacting with this package in the form of a 'manager' cli function.
-   - Ideally from this, you would be able to:
-      - Print/load/save conversations
-      - Get consolidated 'help' functions (ie get the same info when calling '-h' or '?')
-      - Create instances/aliases
-      - Monitor and get stats for all active conversations
-   - The idea around this being there's one manager who controls everything and you don't have to go searching around for a specific convo, help, instance, alias, etc.
 - **Streaming Responses**
    - Expand the ability to get streaming responses on the command line as opposed to waiting until the full completion is done
+- **Chat Settings**
+   - Allow customizable max tokens
+   - Allow each chat to have separate models (ie 3.5-turbo, 4, etc.)
+   - Timeouts on long responses
+- **Additional Models**
+   - Open up the ability to use other models besides 3.5 and 4
+- **Completions**
+   - Helper completions for `chat-manager`
+- **OpenAI Error Handling**
 
 
 ## Credits
 
-This package was created with [xontrib template](https://github.com/xonsh/xontrib-template).
+- This package was created with [xontrib template](https://github.com/xonsh/xontrib-template).
+- [Xonsh Documentation](https://xon.sh/contents.html)
+- [prompt_toolkit](https://python-prompt-toolkit.readthedocs.io/)
+- [Pygments](https://pygments.org/docs/)
+- [Awesome Xontribs](https://github.com/xonsh/awesome-xontribs) - Much inspiration was taken from many projects in this fantastic repo
 
