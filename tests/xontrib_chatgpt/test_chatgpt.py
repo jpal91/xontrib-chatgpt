@@ -100,12 +100,12 @@ def test_defualt_attribs(xession, chat):
     assert chat._tokens == []
     assert chat._max_tokens == 3000
     assert chat.alias == ""
-    assert chat.tokens == 0
+    assert chat.tokens == 53
 
 
 def test_tokens(xession, chat):
     chat._tokens = [1, 2, 3]
-    assert chat.tokens == 6
+    assert chat.tokens == 59
 
 
 def test_chat_raises_error_with_no_api_key(xession, chat, monkeypatch_openai):
@@ -138,18 +138,24 @@ def test_chat_response(xession, monkeypatch_openai, chat):
         {"role": "assistant", "content": "test"},
     ]
     assert chat._tokens == [1, 1]
-    assert chat.tokens == 2
+    assert chat.tokens == 55
 
 
 def test_trim(xession, chat):
-    chat._tokens = [1000, 1000, 1000]
+    chat._tokens = [1000, 1000, 900]
+    chat.messages = ["test", "test", "test"]
     chat._trim()
     assert len(chat._tokens) == 3
     chat._tokens.append(1000)
     chat.messages.append("test")
     chat._trim()
     assert len(chat._tokens) == 3
-    assert len(chat.messages) == 0
+    assert len(chat.messages) == 3
+
+def test_set_base_msgs(xession, chat):
+    assert chat._base_tokens == 53
+    chat.base = [{'role': 'system', 'content': 'test'}]
+    assert chat._base_tokens == 8
 
 
 def test__format_markdown(xession, chat):

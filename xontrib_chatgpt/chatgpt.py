@@ -109,7 +109,7 @@ class ChatGPT(Block):
         """
 
         self.alias = alias
-        self.base: list[dict[str, str]] = [
+        self._base: list[dict[str, str]] = [
             {"role": "system", "content": "You are a helpful assistant."},
             {
                 "role": "system",
@@ -117,6 +117,7 @@ class ChatGPT(Block):
             },
         ]
         self.messages: list[dict[str, str]] = []
+        self._base_tokens: int = 53
         self._tokens: list = []
         self._max_tokens = 3000
         self._managed = managed
@@ -174,7 +175,16 @@ class ChatGPT(Block):
     @property
     def tokens(self) -> int:
         """Current convo tokens"""
-        return sum(self._tokens)
+        return self._base_tokens + sum(self._tokens)
+    
+    @property
+    def base(self) -> list[dict[str, str]]:
+        return self._base
+    
+    @base.setter
+    def base(self, msgs: list[dict[str, str]]) -> None:
+        self._base_tokens = sum(get_token_list(msgs))
+        self._base = msgs
 
     def stats(self) -> None:
         """Prints conversation stats to shell"""
