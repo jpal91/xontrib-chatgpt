@@ -134,7 +134,7 @@ class ChatManager:
         inst = ChatGPT(alias=chat_name, managed=True)
         XSH.ctx[chat_name] = inst
         self._instances[hash(inst)]["name"] = chat_name
-        return f"Created new chat {chat_name}"
+        return f"Created new chat '{chat_name}'"
 
     def ls(self, saved: bool = False) -> str:
         """List all active chats or saved chats
