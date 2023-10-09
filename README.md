@@ -103,9 +103,8 @@ chat-manager?
    - Timeouts on long responses
 - **Additional Models**
    - Open up the ability to use other models besides 3.5 and 4
-- **Completions**
-   - Helper completions for `chat-manager`
-- **OpenAI Error Handling**
+- ~~**Completions**~~ **NEW in v0.1.5**
+   - ~~Helper completions for `chat-manager`~~
 
 
 ## Credits
