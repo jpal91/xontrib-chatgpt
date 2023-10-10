@@ -155,6 +155,24 @@ def _cm_parse() -> ArgumentParser:
         nargs="?",
     )
 
+    p_edit = subparser.add_parser('edit', help="Edit a chat's settings", aliases=['e'])
+    p_edit.add_argument(
+        'name',
+        type=str,
+        help="Name of the chat to edit. Defaults to last used/current chat",
+        nargs="?",
+        default="",
+    )
+    p_edit.add_argument(
+        '-s',
+        '--system',
+        type=str,
+        nargs=1,
+        help='Edit base system messages/instructions to be sent to your chat instance. Must be a string python dict, json, or yaml. See documentation for more information.',
+        dest='sys_msgs',
+        default=[],
+    )
+
     return parser
 
 

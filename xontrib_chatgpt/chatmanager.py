@@ -5,6 +5,7 @@ from collections import defaultdict
 from typing import Optional, Union, TextIO
 from argparse import ArgumentParser
 from re import Pattern
+import yaml
 
 from xonsh.built_ins import XSH
 from xonsh.ansi_colors import ansi_partial_color_format
@@ -112,6 +113,8 @@ class ChatManager:
             return self.print_chat(chat_name=pargs.name, n=pargs.n, mode=pargs.mode)
         elif pargs.cmd == "help":
             return self.help(tgt=pargs.target)
+        elif pargs.cmd in ['edit', 'e']:
+            return self.edit(chat_name=pargs.name, sys_msgs=pargs.sys_msgs)
         else:
             return PARSER.print_help()
 
@@ -276,6 +279,23 @@ class ChatManager:
             XSH.help(getattr(ChatGPT, tgt))
         else:
             PARSER.print_help()
+    
+    def edit(self, chat_name: str, sys_msgs: list[str]) -> Optional[str]:
+        if not chat_name and not self._current:
+            return "No active chat!"
+        elif not chat_name:
+            chat = self._instances[self._current]
+        else:
+            try:
+                chat = self._instances[hash(XSH.ctx[chat_name])]
+            except KeyError:
+                return f"No chat with name {chat_name} found."
+        
+        # TODO: Remove when more options are added
+        if not sys_msgs:
+            return "No system messages to edit!"
+        
+        sys_msgs = get_type(sys_msgs[0])
 
     def chat_names(self) -> list[str]:
         """Returns chat names for current conversations"""
@@ -384,6 +404,9 @@ class ChatManager:
         """Returns a usage string for the xontrib."""
         return ansi_partial_color_format(TUTORIAL)
 
+
+def get_type(msgs: str) -> list[dict]:
+    """Returns a list of dicts from a string of python dict, json, or yaml"""
 
 # TODO: Print from a saved file
 # TODO:
