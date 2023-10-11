@@ -535,8 +535,8 @@ def parse_convo(convo: str) -> tuple[list[dict[str, str]]]:
 
     Returns
     -------
-    list[dict[str, str]]
-        Parsed conversation
+    tuple[list[dict[str, str]]]
+        Parsed conversation and base system messages
     """
     try:
         convo = json.loads(convo)
@@ -561,7 +561,7 @@ def parse_convo(convo: str) -> tuple[list[dict[str, str]]]:
         
         idx += 1
 
-        if idx == n:
+        if idx >= n:
             break
 
         while idx < n and convo[idx].startswith(" "):
