@@ -280,7 +280,7 @@ class ChatManager:
         else:
             PARSER.print_help()
     
-    def edit(self, chat_name: str, sys_msgs: list[str]) -> Optional[str]:
+    def edit(self, chat_name: str, sys_msgs: str) -> Optional[str]:
         if not chat_name and not self._current:
             return "No active chat!"
         elif not chat_name:
@@ -295,7 +295,7 @@ class ChatManager:
         if not sys_msgs:
             return "No system messages to edit!"
         
-        sys_msgs = get_type(sys_msgs[0])
+        sys_msgs = convert_to_sys(sys_msgs)
 
     def chat_names(self) -> list[str]:
         """Returns chat names for current conversations"""
@@ -405,8 +405,24 @@ class ChatManager:
         return ansi_partial_color_format(TUTORIAL)
 
 
-def get_type(msgs: str) -> list[dict]:
+def convert_to_sys(msgs: Union[str, dict, list]) -> list[dict]:
     """Returns a list of dicts from a string of python dict, json, or yaml"""
+    if isinstance(msgs, str):
+        msgs = eval(msgs)
+    
+    if isinstance(msgs, dict):
+        return convert_to_sys([msgs])
+    elif isinstance(msgs, list):
+        for m in msgs:
+            if 'content' not in m:
+                raise Exception
+            m['role'] = 'system'
+        return msgs
+    else:
+        try:
+            return yaml.safe_load(msgs)
+        except yaml.YAMLError:
+            raise Exception
 
 # TODO: Print from a saved file
 # TODO:

@@ -166,11 +166,9 @@ def _cm_parse() -> ArgumentParser:
     p_edit.add_argument(
         '-s',
         '--system',
-        type=str,
-        nargs=1,
-        help='Edit base system messages/instructions to be sent to your chat instance. Must be a string python dict, json, or yaml. See documentation for more information.',
+        help='Edit base system messages/instructions to be sent to your chat instance. Must be a python list[dict], dict, or yaml equivalent. See documentation for more information.',
         dest='sys_msgs',
-        default=[],
+        default='',
     )
 
     return parser
@@ -178,5 +176,5 @@ def _cm_parse() -> ArgumentParser:
 
 if __name__ == "__main__":
     parser = _cm_parse()
-    args = parser.parse_args(["help", "-h"])
+    args = parser.parse_args()
     print(args)
