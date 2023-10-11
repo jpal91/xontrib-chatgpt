@@ -31,6 +31,7 @@ def test_files(temp_home):
 def cm():
     return ChatManager()
 
+
 @pytest.fixture
 def sys_msgs():
     l = """[
@@ -41,12 +42,14 @@ def sys_msgs():
 
     d = '{"content": "Hello"}'
 
-    y = dedent("""
+    y = dedent(
+        """
     - role: system
       content: Hello
     - role: system
       content: Hi there!
-    """)
+    """
+    )
 
     return l, d, y
 
@@ -112,9 +115,9 @@ def test_add_with_conflicting_name(xession, cm):
     cm.add("test")
     res = cm.add("test")
     assert res == "Chat with that name already exists!"
-    xession.ctx['glob'] = 'something'
-    res = cm.add('glob')
-    assert 'glob' in xession.ctx
+    xession.ctx["glob"] = "something"
+    res = cm.add("glob")
+    assert "glob" in xession.ctx
     assert res == "Variable with that name already exists!"
 
 
@@ -198,8 +201,8 @@ def test_save(xession, cm, test_files, temp_home, cm_events, monkeypatch):
 
 def test_save_returns_when_key_error(xession, cm):
     with pytest.raises(SystemExit) as s:
-        cm.save('nonexistent')
-    
+        cm.save("nonexistent")
+
     assert s.value.code == "No chat with name nonexistent found."
 
 
@@ -224,6 +227,16 @@ def test_save_returns_when_key_error(xession, cm):
         ),
         ("help", ["help"], ((), {"tgt": ""})),
         ("help", ["help", "print_chat"], ((), {"tgt": "print_chat"})),
+        (
+            "edit",
+            ["edit", "test"],
+            ((), {"chat_name": "test", "sys_msgs": "", "no_code": False}),
+        ),
+        (
+            "edit",
+            ["edit", "-s", "[{'role': 'user'}]", "-C"],
+            ((), {"chat_name": "", "sys_msgs": "[{'role': 'user'}]", "no_code": True}),
+        ),
     ],
 )
 def test_cli(xession, cm, action, args, expected, monkeypatch):
@@ -234,19 +247,31 @@ def test_cli(xession, cm, action, args, expected, monkeypatch):
     cm(args)
     assert getattr(cm, f"_{action}") == expected
 
+
 def test_convert_to_sys(xession, sys_msgs):
     l, d, y = sys_msgs
     res = convert_to_sys(l)
-    assert res == [{"role": "system", "content": "Hello"}, {"role": "system", "content": "Hi there!"}]
+    assert res == [
+        {"role": "system", "content": "Hello"},
+        {"role": "system", "content": "Hi there!"},
+    ]
     res = convert_to_sys(d)
     assert res == [{"role": "system", "content": "Hello"}]
     res = convert_to_sys(y)
-    assert res == [{"role": "system", "content": "Hello"}, {"role": "system", "content": "Hi there!"}]
+    assert res == [
+        {"role": "system", "content": "Hello"},
+        {"role": "system", "content": "Hi there!"},
+    ]
+
 
 def test_edit(xession, cm, cm_events):
     cm_events.on_chat_create(lambda *args, **kw: cm.on_chat_create_handler(*args, **kw))
-    cm.add('test')
+    cm.add("test")
     sys_msg = [{"role": "system", "content": "Hello"}]
     cm.edit(sys_msgs=str(sys_msg))
-    inst = cm.get_chat_by_name('test')['inst']
+    inst = cm.get_chat_by_name("test")["inst"]
+    assert len(inst.base) == 2
+    assert inst.base[1:] == sys_msg
+    cm.edit(sys_msgs=str(sys_msg), no_code=True)
+    assert len(inst.base) == 1
     assert inst.base == sys_msg

@@ -169,6 +169,13 @@ def _cm_parse() -> ArgumentParser:
         help='Edit base system messages/instructions to be sent to your chat instance. Must be a python list[dict], dict, or yaml equivalent. See documentation for more information.',
         dest='sys_msgs',
         default='',
+    ),
+    p_edit.add_argument(
+        '-C',
+        '--no-code',
+        help='If set, the default instruction to add markdown code blocks will be removed. Only input system messages will be added.',
+        dest='no_code',
+        action='store_true'
     )
 
     return parser

@@ -117,7 +117,7 @@ class ChatManager:
         elif pargs.cmd == "help":
             return self.help(tgt=pargs.target)
         elif pargs.cmd in ["edit", "e"]:
-            return self.edit(chat_name=pargs.name, sys_msgs=pargs.sys_msgs)
+            return self.edit(chat_name=pargs.name, sys_msgs=pargs.sys_msgs, no_code=pargs.no_code)
         else:
             return PARSER.print_help()
 
@@ -267,7 +267,7 @@ class ChatManager:
         else:
             PARSER.print_help()
 
-    def edit(self, chat_name: str = "", sys_msgs: str = "") -> Optional[str]:
+    def edit(self, chat_name: str = "", sys_msgs: str = "", no_code: bool = False) -> Optional[str]:
         """Allows editing attributes of a chat instance
 
         Parameters
@@ -293,7 +293,10 @@ class ChatManager:
             return "No system messages to edit!"
 
         sys_msgs = convert_to_sys(sys_msgs)
-        chat["inst"].base = sys_msgs
+        if no_code:
+            chat["inst"].base = sys_msgs
+        else:
+            chat['inst'].base = [chat['inst'].base[1]] + sys_msgs
 
     def chat_names(self) -> list[str]:
         """Returns chat names for current conversations"""
