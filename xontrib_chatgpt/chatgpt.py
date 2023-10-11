@@ -516,7 +516,8 @@ class ChatGPT(Block):
         messages, base = parse_convo(convo)
         new_cls = cls(alias=alias, managed=managed)
         new_cls.messages = messages
-        new_cls.base = base
+        if base:
+            new_cls.base = base
         new_cls._tokens = get_token_list(messages)
         new_cls._base_tokens = sum(get_token_list(base))
 
