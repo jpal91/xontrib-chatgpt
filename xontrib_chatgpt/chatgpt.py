@@ -113,7 +113,7 @@ class ChatGPT(Block):
             {"role": "system", "content": "You are a helpful assistant."},
             {
                 "role": "system",
-                "content": "If your responses include code, make sure to wrap it in a markdown code block with the appropriate language. \n Example: \n ```python \n print('Hello World!') \n ```",
+                "content": "If your responses include code, make sure to wrap it in a markdown code block with the appropriate language.\nExample:\n```python\nprint('Hello World!')\n```",
             },
         ]
         self.messages: list[dict[str, str]] = []
@@ -290,15 +290,18 @@ class ChatGPT(Block):
     def _get_json_convo(self, n: int) -> list[dict[str, str]]:
         """Returns the current conversation as a JSON string, up to n last items"""
         n = -n if n != 0 else 0
-        return json.dumps(self.messages[n:], indent=4)
+        messages = self.base + self.messages if n == 0 else self.messages[n:]
+
+        return json.dumps(messages, indent=4)
 
     def _get_printed_convo(self, n: int, color: bool = True) -> list[tuple[str, str]]:
         """Helper method to get up to n items of conversation, formatted for printing"""
         user = XSH.env.get("USER", "user")
         convo = []
         n = -n if n != 0 else 0
+        messages = self.base + self.messages if n == 0 else self.messages[n:]
 
-        for msg in self.messages[n:]:
+        for msg in messages:
             if msg["role"] == "user":
                 role = (
                     ansi_partial_color_format("{BOLD_GREEN}" + f"{user}:" + "{RESET}")
@@ -310,6 +313,12 @@ class ChatGPT(Block):
                     ansi_partial_color_format("{BOLD_BLUE}" + "ChatGPT:" + "{RESET}")
                     if color
                     else "ChatGPT:"
+                )
+            elif msg['role'] == 'system':
+                role = (
+                    ansi_partial_color_format("{BOLD_BLUE}" + "System:" + "{RESET}")
+                    if color
+                    else "System:"
                 )
             else:
                 continue
@@ -504,15 +513,17 @@ class ChatGPT(Block):
         with open(path, "r") as f:
             convo = f.read()
 
-        messages = parse_convo(convo)
+        messages, base = parse_convo(convo)
         new_cls = cls(alias=alias, managed=managed)
         new_cls.messages = messages
+        new_cls.base = base
         new_cls._tokens = get_token_list(messages)
+        new_cls._base_tokens = sum(get_token_list(base))
 
         return new_cls
 
 
-def parse_convo(convo: str) -> list[dict[str, str]]:
+def parse_convo(convo: str) -> tuple[list[dict[str, str]]]:
     """Parses a conversation from a saved file
 
     Parameters
@@ -533,15 +544,19 @@ def parse_convo(convo: str) -> list[dict[str, str]]:
         return convo
 
     convo = convo.split("\n")
-    messages, user, idx, n = [], True, 0, len(convo)
+    messages, base, user, idx, n = [], [], True, 0, len(convo)
 
     # Couldn't figure out how to do this with regex, so while loop instead
     while idx < n:
         if not convo[idx]:
             idx += 1
             continue
-
-        msg = {"role": "user" if user else "assistant", "content": ""}
+        
+        if convo[idx].startswith('System'):
+            msg = {'role': 'system', 'content': ''}
+        else:
+            msg = {"role": "user" if user else "assistant", "content": ""}
+        
         idx += 1
 
         if idx == n:
@@ -552,10 +567,14 @@ def parse_convo(convo: str) -> list[dict[str, str]]:
             idx += 1
 
         msg["content"] = dedent(msg["content"])
-        messages.append(msg)
-        user = not user
+        
+        if msg['role'] == 'system':
+            base.append(msg)
+        else:
+            messages.append(msg)
+            user = not user
 
-    return messages
+    return messages, base
 
 
 def get_token_list(messages: list[dict[str, str]]) -> list[int]:

@@ -50,6 +50,7 @@ def temp_home(tmpdir_factory):
     fixtures = [
         "color_convo.txt",
         "no_color_convo.txt",
+        "no_color_convo2.txt",
         "convo.json",
         "convo2.json",
         "long_convo.txt",
@@ -171,7 +172,7 @@ def test__get_json_convo(xession, chat):
 
 
 @pytest.mark.parametrize(
-    ("n", "n_expected", "color"), [(0, 3, True), (1, 1, True), (-1, 2, False)]
+    ("n", "n_expected", "color"), [(0, 5, True), (1, 1, True), (-1, 2, False)]
 )
 def test__get_printed_convo(xession, n, n_expected, color, chat):
     chat.messages.extend(
@@ -338,9 +339,10 @@ def test_enter_exit(xession, chat, capsys, monkeypatch_openai):
 
 
 def test_loads_from_convo(xession, temp_home):
-    chat_file = temp_home / "expected" / "no_color_convo.txt"
+    chat_file = temp_home / "expected" / "no_color_convo2.txt"
     new_cls = ChatGPT.fromconvo(chat_file)
     assert isinstance(new_cls, ChatGPT)
+    assert new_cls.base[0] == {'role': 'system', 'content': 'Test\n'}
     assert "Please write me a hello world function" in new_cls.messages[0]["content"]
 
 
@@ -372,12 +374,15 @@ def test_parses_text(xession, temp_home):
     with open(text_path) as f:
         exp_text = f.read()
 
-    res = parse_convo(exp_text)
-    assert len(res) == 6
+    msgs, base = parse_convo(exp_text)
+    assert len(msgs) == 6
+    assert len(base) == 1
 
-    for r in res:
+    for r in msgs:
         assert r["role"] in ["user", "assistant"]
         assert r["content"] != ""
+    
+    assert base[0] == {'role': 'system', 'content': 'This is a test.\n'}
 
 
 # get_token_list

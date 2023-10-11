@@ -1,5 +1,5 @@
 System:
-    You are a helpful assistant.
+    Test
 System:
     If your responses include code, make sure to wrap it in a markdown code block with the appropriate language.
     Example:
@@ -14,4 +14,3 @@ ChatGPT:
     def hello_world():
         print('Hello world!')
     ```
-
