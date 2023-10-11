@@ -80,6 +80,7 @@ TUTORIAL = """
         This will delete the instance, unsaved conversation history, and alias. Be careful!
 """
 
+
 class ChatManager:
     """Class to manage multiple chats"""
 
@@ -115,7 +116,7 @@ class ChatManager:
             return self.print_chat(chat_name=pargs.name, n=pargs.n, mode=pargs.mode)
         elif pargs.cmd == "help":
             return self.help(tgt=pargs.target)
-        elif pargs.cmd in ['edit', 'e']:
+        elif pargs.cmd in ["edit", "e"]:
             return self.edit(chat_name=pargs.name, sys_msgs=pargs.sys_msgs)
         else:
             return PARSER.print_help()
@@ -216,15 +217,7 @@ class ChatManager:
         Optional[str]
         """
 
-        if not chat_name and not self._current:
-            return "No active chat!"
-        elif not chat_name:
-            chat = self._instances[self._current]
-        else:
-            try:
-                chat = self._instances[hash(XSH.ctx[chat_name])]
-            except KeyError:
-                return f"No chat with name {chat_name} found."
+        chat = self.get_chat_by_name(chat_name)
 
         return chat["inst"].save_convo(mode=mode)
 
@@ -247,15 +240,7 @@ class ChatManager:
         Optional[str]
         """
 
-        if not chat_name and not self._current:
-            return "No active chat!"
-        elif not chat_name:
-            chat = self._instances[self._current]
-        else:
-            try:
-                chat = self._instances[hash(XSH.ctx[chat_name])]
-            except KeyError:
-                return f"No chat with name {chat_name} found."
+        chat = self.get_chat_by_name(chat_name)
 
         chat["inst"].print_convo(n=n, mode=mode)
 
@@ -281,30 +266,41 @@ class ChatManager:
             XSH.help(getattr(ChatGPT, tgt))
         else:
             PARSER.print_help()
-    
-    def edit(self, chat_name: str = '', sys_msgs: str = '') -> Optional[str]:
-        if not chat_name and not self._current:
-            return "No active chat!"
-        elif not chat_name:
-            chat = self._instances[self._current]
-        else:
-            try:
-                chat = self._instances[hash(XSH.ctx[chat_name])]
-            except KeyError:
-                return f"No chat with name {chat_name} found."
-        
+
+    def edit(self, chat_name: str = "", sys_msgs: str = "") -> Optional[str]:
+        """Allows editing attributes of a chat instance
+
+        Parameters
+        ----------
+        chat_name : str, optional
+            Name of the chat to edit. Defaults to last used/current chat, by default ''
+        sys_msgs : str, optional
+            System messages to edit, by default ''
+            Is a string representation of either a python list[dict], dict, or yaml equivalent.
+
+        Returns
+        -------
+        Optional[str]
+
+        See Also
+        --------
+        xontrib_chatgpt.chatmanager.convert_to_sys
+        """
+        chat = self.get_chat_by_name(chat_name)
+
         # TODO: Remove when more options are added
         if not sys_msgs:
             return "No system messages to edit!"
-        
+
         sys_msgs = convert_to_sys(sys_msgs)
-        chat['inst'].base = sys_msgs
+        chat["inst"].base = sys_msgs
 
     def chat_names(self) -> list[str]:
         """Returns chat names for current conversations"""
         return [inst["name"] for inst in self._instances.values()]
-    
+
     def get_chat_by_name(self, chat_name: str) -> Optional[dict]:
+        """Returns a chat that matches given name or exits"""
         if not chat_name and not self._current:
             sys.exit("No active chat!")
         elif not chat_name:
@@ -314,9 +310,9 @@ class ChatManager:
                 chat = self._instances[hash(XSH.ctx[chat_name])]
             except KeyError:
                 sys.exit(f"No chat with name {chat_name} found.")
-        
+
         return chat
-    
+
     def _find_saved(self) -> list[Optional[str]]:
         """Returns a list of saved chat files in the default directory"""
         def_dir = os.path.join(XSH.env["XONSH_DATA_DIR"], "chatgpt")
@@ -354,7 +350,7 @@ class ChatManager:
 
     def _choose_from_multiple(self, chats: list[tuple[str, str]]) -> tuple[str, str]:
         """If multiple saved chats are found, allows the user to choose from them"""
-        
+
         print("Multiple choices found, please choose from:")
         [print(f"  {i + 1}. {os.path.basename(n[1])}") for i, n in enumerate(chats)]
 
@@ -392,12 +388,12 @@ class ChatManager:
     def on_chat_create_handler(self, inst: ChatGPT) -> None:
         """Handler for on_chat_create. Updates the internal dict with the new chat instance."""
         self._current = hash(inst)
-        
+
         # 'name' left blank because at this point the instance init isn't complete,
-        # so variable name is not yet in the global space. 
+        # so variable name is not yet in the global space.
         # Updated later in the add method
         self._instances[hash(inst)] = {
-            "name": "", 
+            "name": "",
             "alias": inst.alias,
             "inst": weakref.proxy(inst),
         }
@@ -422,29 +418,57 @@ class ChatManager:
 
 
 def convert_to_sys(msgs: Union[str, dict, list]) -> list[dict]:
-    """Returns a list of dicts from a string of python dict, json, or yaml"""
+    """Returns a list of dicts from a string of python dict, json, or yaml.
+    Calls itself recursively until the result is either a list[dict]
+    or raises an error.
+
+    Will attempt to parse yaml only if package is installed.
+
+    Parameters
+    ----------
+    msgs : Union[str, dict, list]
+        Messages to convert to system messages
+
+    Returns
+    -------
+    list[dict]
+
+    Raises
+    ------
+    MalformedSysMsgError
+        Raised when the messages are not properly formatted
+
+    Examples
+    --------
+    msgs :
+        '[{"role": "system", "content": "Hello"}, {"role": "system", "content": "Hi there!"}]'
+        '{"role": "system", "content": "Hello"}'
+        '- role: system\n  content: Hello\n- role: system\n  content: Hi there!'
+    """
+
     if isinstance(msgs, str):
         msgs = msgs.strip()
         try:
             msgs = eval(msgs)
         except SyntaxError:
             pass
-    
+
     if isinstance(msgs, dict):
         return convert_to_sys([msgs])
     elif isinstance(msgs, list):
         for m in msgs:
-            if 'content' not in m:
+            if "content" not in m:
                 raise MalformedSysMsgError(msgs)
-            m['role'] = 'system'
+            m["role"] = "system"
         return msgs
     elif YAML is not None:
         try:
             return YAML.safe_load(msgs)
         except YAML.YAMLError:
             pass
-    
+
     raise MalformedSysMsgError(msgs)
+
 
 # TODO: Print from a saved file
 # TODO:

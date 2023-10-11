@@ -186,7 +186,8 @@ def test_load_with_conflicting_name(xession, cm, test_files, temp_home):
 def test_save(xession, cm, test_files, temp_home, cm_events, monkeypatch):
     monkeypatch.setenv("USER", "user")
     cm_events.on_chat_create(lambda *args, **kw: cm.on_chat_create_handler(*args, **kw))
-    assert cm.save() == "No active chat!"
+    with pytest.raises(SystemExit):
+        cm.save()
     inst = ChatGPT(alias="new", managed=True)
     inst.messages += [{"role": "user", "content": "test"}]
     res = cm.save()
@@ -196,8 +197,10 @@ def test_save(xession, cm, test_files, temp_home, cm_events, monkeypatch):
 
 
 def test_save_returns_when_key_error(xession, cm):
-    res = cm.save("no_exist")
-    assert res == "No chat with name no_exist found."
+    with pytest.raises(SystemExit) as s:
+        cm.save('nonexistent')
+    
+    assert s.value.code == "No chat with name nonexistent found."
 
 
 @pytest.mark.parametrize(
