@@ -49,11 +49,7 @@ class MalformedSysMsgError(Exception):
         self.msg = msg
 
     def __str__(self):
-        return f"""
-        \x1b[1;31mIncorrect System Message Format:
-        {self.msg}
-        Must be a python list[dict], dict, or yaml equivalent. See documentation for more information.
-        """
+        return f"\x1b[1;31mIncorrect System Message Format:\n{self.msg}\nMust be a python list[dict], dict, or yaml equivalent. See documentation for more information."
 
 
 #############

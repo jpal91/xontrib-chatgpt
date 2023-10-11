@@ -14,7 +14,7 @@ from xonsh.lazyasd import LazyObject
 from xontrib_chatgpt.chatgpt import ChatGPT
 from xontrib_chatgpt.lazyobjs import _FIND_NAME_REGEX, _YAML
 from xontrib_chatgpt.args import _cm_parse
-from xontrib_chatgpt.exceptions import MalformedSysMsgError
+from xontrib_chatgpt.exceptions import MalformedSysMsgError, NoConversationsError, InvalidConversationsTypeError
 
 FIND_NAME_REGEX: Pattern = LazyObject(_FIND_NAME_REGEX, globals(), "FIND_NAME_REGEX")
 YAML = LazyObject(_YAML, globals(), "YAML")
@@ -78,6 +78,17 @@ TUTORIAL = """
             {YELLOW}>>> {INTENSE_PURPLE}del {INTENSE_BLUE}gpt{RESET}
         
         This will delete the instance, unsaved conversation history, and alias. Be careful!
+
+        {BOLD_WHITE}Editing System Instructions{RESET}
+        {BOLD_WHITE}---------------------{RESET}
+
+        You can edit the {INTENSE_BLUE}ChatGPT{RESET} system instructions that are sent to the instance
+        by using {INTESNE_BLUE}chat-manager edit -s{RESET}. This allows you to customize the
+        instructions sent to {INTENSE_BLUE}ChatGPT{RESET} to your liking.
+
+        The system messages must be either a list of dicts, a dict, or a yaml string (if PyYaml is installed).
+
+        For more information, please visit: https://github.com/jpal91/xontrib-chatgpt/edit_sys_messages.md
 """
 
 
@@ -218,8 +229,14 @@ class ChatManager:
         """
 
         chat = self.get_chat_by_name(chat_name)
+        
+        try:
+            res = chat["inst"].save_convo(mode=mode)
+        except (NoConversationsError, InvalidConversationsTypeError) as e:
+            print(e)
+            sys.exit(1)
 
-        return chat["inst"].save_convo(mode=mode)
+        return res
 
     def print_chat(
         self, chat_name: str = "", n: int = 10, mode: str = "color"
@@ -242,7 +259,13 @@ class ChatManager:
 
         chat = self.get_chat_by_name(chat_name)
 
-        chat["inst"].print_convo(n=n, mode=mode)
+        try:
+            res = chat["inst"].print_convo(n=n, mode=mode)
+        except (NoConversationsError, InvalidConversationsTypeError) as e:
+            print(e)
+            sys.exit(1)
+        
+        return res
 
     def help(self, tgt: str = "") -> Optional[str]:
         """Print help information on the instance, methods, or xontrib
@@ -305,14 +328,16 @@ class ChatManager:
     def get_chat_by_name(self, chat_name: str) -> Optional[dict]:
         """Returns a chat that matches given name or exits"""
         if not chat_name and not self._current:
-            sys.exit("No active chat!")
+            print("No active chat!")
+            sys.exit(1)
         elif not chat_name:
             chat = self._instances[self._current]
         else:
             try:
                 chat = self._instances[hash(XSH.ctx[chat_name])]
             except KeyError:
-                sys.exit(f"No chat with name {chat_name} found.")
+                print(f"No chat with name {chat_name} found.")
+                sys.exit(1)
 
         return chat
 

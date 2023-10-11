@@ -203,7 +203,7 @@ def test_save_returns_when_key_error(xession, cm):
     with pytest.raises(SystemExit) as s:
         cm.save("nonexistent")
 
-    assert s.value.code == "No chat with name nonexistent found."
+    assert s.value.code == 1
 
 
 @pytest.mark.parametrize(

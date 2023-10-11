@@ -426,6 +426,7 @@ class ChatGPT(Block):
         """
         if not self.messages:
             raise NoConversationsError()
+            # return ansi_partial_color_format('{BOLD_RED}No Conversation History!{RESET}')
 
         if not path:
             path = self._get_default_path(name=name, json_mode=mode == "json")
