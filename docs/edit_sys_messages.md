@@ -79,6 +79,9 @@ Assigning the system messages to a variable (like the examples above) is the rec
 
 ```xsh
 chat-manager edit -s @(instructions)
+
+# Alternatively, save your system messages to a file and use a bash subprocess
+chat-manager edit -s $(cat /tmp/instructions.txt)
 ```
 
 Unless specified, the second system message from the [Introduction](#introduction) section will be included in all system messages (ie *If your responses include code...*). You can  prevent this behavior by passing the `-C` flag to `edit`. With this option, only your specified system messages will be passed. 
