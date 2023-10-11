@@ -176,11 +176,11 @@ class ChatGPT(Block):
     def tokens(self) -> int:
         """Current convo tokens"""
         return self._base_tokens + sum(self._tokens)
-    
+
     @property
     def base(self) -> list[dict[str, str]]:
         return self._base
-    
+
     @base.setter
     def base(self, msgs: list[dict[str, str]]) -> None:
         self._base_tokens = sum(get_token_list(msgs))
@@ -250,7 +250,11 @@ class ChatGPT(Block):
             )
         except OpenAIError as e:
             self.messages.pop()
-            sys.exit(ansi_partial_color_format("{}OpenAI Error{}: {}".format('{BOLD_RED}', '{RESET}', e)))
+            sys.exit(
+                ansi_partial_color_format(
+                    "{}OpenAI Error{}: {}".format("{BOLD_RED}", "{RESET}", e)
+                )
+            )
 
         res_text = response["choices"][0]["message"]
         user_toks, gpt_toks = (
@@ -314,7 +318,7 @@ class ChatGPT(Block):
                     if color
                     else "ChatGPT:"
                 )
-            elif msg['role'] == 'system':
+            elif msg["role"] == "system":
                 role = (
                     ansi_partial_color_format("{BOLD_BLUE}" + "System:" + "{RESET}")
                     if color
@@ -371,7 +375,9 @@ class ChatGPT(Block):
             )
         print(rtn_str)
 
-    def _get_default_path(self, name: str = "", json_mode: bool = False, override: bool = False) -> str:
+    def _get_default_path(
+        self, name: str = "", json_mode: bool = False, override: bool = False
+    ) -> str:
         """Helper method to get the default path for saving conversations"""
         user = XSH.env.get("USER", "user")
         data_dir = XSH.env.get(
@@ -398,7 +404,9 @@ class ChatGPT(Block):
 
         return path
 
-    def save_convo(self, path: str = "", name: str = "", mode: str = "text", override: bool = False) -> None:
+    def save_convo(
+        self, path: str = "", name: str = "", mode: str = "text", override: bool = False
+    ) -> None:
         """
         Saves conversation to path or default xonsh data directory
 
@@ -430,11 +438,13 @@ class ChatGPT(Block):
             raise NoConversationsError()
 
         if not path:
-            path = self._get_default_path(name=name, json_mode=mode == "json", override=override)
+            path = self._get_default_path(
+                name=name, json_mode=mode == "json", override=override
+            )
         elif os.path.exists(path) and not override:
             res = input(f"File already exists: {path}\nOverride? [Y/n]: ")
 
-            if res.lower() == 'n':
+            if res.lower() == "n":
                 return
 
         if mode == "text":
@@ -526,7 +536,6 @@ class ChatGPT(Block):
         if base:
             new_cls.base = base
         new_cls._tokens = get_token_list(messages)
-        
 
         return new_cls
 
@@ -559,12 +568,12 @@ def parse_convo(convo: str) -> tuple[list[dict[str, str]]]:
         if not convo[idx]:
             idx += 1
             continue
-        
-        if convo[idx].startswith('System'):
-            msg = {'role': 'system', 'content': ''}
+
+        if convo[idx].startswith("System"):
+            msg = {"role": "system", "content": ""}
         else:
             msg = {"role": "user" if user else "assistant", "content": ""}
-        
+
         idx += 1
 
         if idx >= n:
@@ -575,8 +584,8 @@ def parse_convo(convo: str) -> tuple[list[dict[str, str]]]:
             idx += 1
 
         msg["content"] = dedent(msg["content"])
-        
-        if msg['role'] == 'system':
+
+        if msg["role"] == "system":
             base.append(msg)
         else:
             messages.append(msg)

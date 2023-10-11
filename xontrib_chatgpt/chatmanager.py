@@ -14,7 +14,11 @@ from xonsh.lazyasd import LazyObject
 from xontrib_chatgpt.chatgpt import ChatGPT
 from xontrib_chatgpt.lazyobjs import _FIND_NAME_REGEX, _YAML
 from xontrib_chatgpt.args import _cm_parse
-from xontrib_chatgpt.exceptions import MalformedSysMsgError, NoConversationsError, InvalidConversationsTypeError
+from xontrib_chatgpt.exceptions import (
+    MalformedSysMsgError,
+    NoConversationsError,
+    InvalidConversationsTypeError,
+)
 
 FIND_NAME_REGEX: Pattern = LazyObject(_FIND_NAME_REGEX, globals(), "FIND_NAME_REGEX")
 YAML = LazyObject(_YAML, globals(), "YAML")
@@ -122,13 +126,17 @@ class ChatManager:
         elif pargs.cmd == "load":
             return self.load(pargs.name[0])
         elif pargs.cmd == "save":
-            return self.save(chat_name=pargs.name, mode=pargs.mode, override=pargs.override)
+            return self.save(
+                chat_name=pargs.name, mode=pargs.mode, override=pargs.override
+            )
         elif pargs.cmd in ["print", "p"]:
             return self.print_chat(chat_name=pargs.name, n=pargs.n, mode=pargs.mode)
         elif pargs.cmd == "help":
             return self.help(tgt=pargs.target)
         elif pargs.cmd in ["edit", "e"]:
-            return self.edit(chat_name=pargs.name, sys_msgs=pargs.sys_msgs, no_code=pargs.no_code)
+            return self.edit(
+                chat_name=pargs.name, sys_msgs=pargs.sys_msgs, no_code=pargs.no_code
+            )
         else:
             return PARSER.print_help()
 
@@ -213,7 +221,9 @@ class ChatManager:
 
         return f"Loaded chat {name} from {path}"
 
-    def save(self, chat_name: str = "", mode: str = "text", override: bool = False) -> Optional[str]:
+    def save(
+        self, chat_name: str = "", mode: str = "text", override: bool = False
+    ) -> Optional[str]:
         """Save a conversation to a file
 
         Parameters
@@ -229,7 +239,7 @@ class ChatManager:
         """
 
         chat = self.get_chat_by_name(chat_name)
-        
+
         try:
             res = chat["inst"].save_convo(mode=mode)
         except (NoConversationsError, InvalidConversationsTypeError) as e:
@@ -264,7 +274,7 @@ class ChatManager:
         except (NoConversationsError, InvalidConversationsTypeError) as e:
             print(e)
             sys.exit(1)
-        
+
         return res
 
     def help(self, tgt: str = "") -> Optional[str]:
@@ -290,7 +300,9 @@ class ChatManager:
         else:
             PARSER.print_help()
 
-    def edit(self, chat_name: str = "", sys_msgs: str = "", no_code: bool = False) -> Optional[str]:
+    def edit(
+        self, chat_name: str = "", sys_msgs: str = "", no_code: bool = False
+    ) -> Optional[str]:
         """Allows editing attributes of a chat instance
 
         Parameters
@@ -319,7 +331,7 @@ class ChatManager:
         if no_code:
             chat["inst"].base = sys_msgs
         else:
-            chat['inst'].base = [chat['inst'].base[1]] + sys_msgs
+            chat["inst"].base = [chat["inst"].base[1]] + sys_msgs
 
     def chat_names(self) -> list[str]:
         """Returns chat names for current conversations"""
