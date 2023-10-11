@@ -1,21 +1,23 @@
 """Module for ChatManager to manage multiple chats"""
 import os
+import sys
 import weakref
 from collections import defaultdict
 from typing import Optional, Union, TextIO
 from argparse import ArgumentParser
 from re import Pattern
-import yaml
 
 from xonsh.built_ins import XSH
 from xonsh.ansi_colors import ansi_partial_color_format
 from xonsh.lazyasd import LazyObject
 
 from xontrib_chatgpt.chatgpt import ChatGPT
-from xontrib_chatgpt.lazyobjs import _FIND_NAME_REGEX
+from xontrib_chatgpt.lazyobjs import _FIND_NAME_REGEX, _YAML
 from xontrib_chatgpt.args import _cm_parse
+from xontrib_chatgpt.exceptions import MalformedSysMsgError
 
 FIND_NAME_REGEX: Pattern = LazyObject(_FIND_NAME_REGEX, globals(), "FIND_NAME_REGEX")
+YAML = LazyObject(_YAML, globals(), "YAML")
 PARSER: ArgumentParser = LazyObject(_cm_parse, globals(), "PARSER")
 
 TUTORIAL = """
@@ -280,7 +282,7 @@ class ChatManager:
         else:
             PARSER.print_help()
     
-    def edit(self, chat_name: str, sys_msgs: str) -> Optional[str]:
+    def edit(self, chat_name: str = '', sys_msgs: str = '') -> Optional[str]:
         if not chat_name and not self._current:
             return "No active chat!"
         elif not chat_name:
@@ -296,11 +298,25 @@ class ChatManager:
             return "No system messages to edit!"
         
         sys_msgs = convert_to_sys(sys_msgs)
+        chat['inst'].base = sys_msgs
 
     def chat_names(self) -> list[str]:
         """Returns chat names for current conversations"""
         return [inst["name"] for inst in self._instances.values()]
-
+    
+    def get_chat_by_name(self, chat_name: str) -> Optional[dict]:
+        if not chat_name and not self._current:
+            sys.exit("No active chat!")
+        elif not chat_name:
+            chat = self._instances[self._current]
+        else:
+            try:
+                chat = self._instances[hash(XSH.ctx[chat_name])]
+            except KeyError:
+                sys.exit(f"No chat with name {chat_name} found.")
+        
+        return chat
+    
     def _find_saved(self) -> list[Optional[str]]:
         """Returns a list of saved chat files in the default directory"""
         def_dir = os.path.join(XSH.env["XONSH_DATA_DIR"], "chatgpt")
@@ -408,21 +424,27 @@ class ChatManager:
 def convert_to_sys(msgs: Union[str, dict, list]) -> list[dict]:
     """Returns a list of dicts from a string of python dict, json, or yaml"""
     if isinstance(msgs, str):
-        msgs = eval(msgs)
+        msgs = msgs.strip()
+        try:
+            msgs = eval(msgs)
+        except SyntaxError:
+            pass
     
     if isinstance(msgs, dict):
         return convert_to_sys([msgs])
     elif isinstance(msgs, list):
         for m in msgs:
             if 'content' not in m:
-                raise Exception
+                raise MalformedSysMsgError(msgs)
             m['role'] = 'system'
         return msgs
-    else:
+    elif YAML is not None:
         try:
-            return yaml.safe_load(msgs)
-        except yaml.YAMLError:
-            raise Exception
+            return YAML.safe_load(msgs)
+        except YAML.YAMLError:
+            pass
+    
+    raise MalformedSysMsgError(msgs)
 
 # TODO: Print from a saved file
 # TODO:

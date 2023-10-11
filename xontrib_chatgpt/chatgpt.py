@@ -518,7 +518,6 @@ class ChatGPT(Block):
         new_cls.messages = messages
         if base:
             new_cls.base = base
-            new_cls._base_tokens = sum(get_token_list(base))
         new_cls._tokens = get_token_list(messages)
         
 

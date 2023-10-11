@@ -1,6 +1,7 @@
 import pytest
 from datetime import datetime
-from xontrib_chatgpt.chatmanager import ChatManager
+from textwrap import dedent
+from xontrib_chatgpt.chatmanager import ChatManager, convert_to_sys
 from xontrib_chatgpt.chatgpt import ChatGPT
 
 
@@ -29,6 +30,25 @@ def test_files(temp_home):
 @pytest.fixture
 def cm():
     return ChatManager()
+
+@pytest.fixture
+def sys_msgs():
+    l = """[
+    {'role': 'system', 'content': 'Hello'},
+    {'role': 'system', 'content': 'Hi there!'},
+    ]
+    """
+
+    d = '{"content": "Hello"}'
+
+    y = dedent("""
+    - role: system
+      content: Hello
+    - role: system
+      content: Hi there!
+    """)
+
+    return l, d, y
 
 
 def test_update_inst_dict(xession, cm):
@@ -210,3 +230,20 @@ def test_cli(xession, cm, action, args, expected, monkeypatch):
     )
     cm(args)
     assert getattr(cm, f"_{action}") == expected
+
+def test_convert_to_sys(xession, sys_msgs):
+    l, d, y = sys_msgs
+    res = convert_to_sys(l)
+    assert res == [{"role": "system", "content": "Hello"}, {"role": "system", "content": "Hi there!"}]
+    res = convert_to_sys(d)
+    assert res == [{"role": "system", "content": "Hello"}]
+    res = convert_to_sys(y)
+    assert res == [{"role": "system", "content": "Hello"}, {"role": "system", "content": "Hi there!"}]
+
+def test_edit(xession, cm, cm_events):
+    cm_events.on_chat_create(lambda *args, **kw: cm.on_chat_create_handler(*args, **kw))
+    cm.add('test')
+    sys_msg = [{"role": "system", "content": "Hello"}]
+    cm.edit(sys_msgs=str(sys_msg))
+    inst = cm.get_chat_by_name('test')['inst']
+    assert inst.base == sys_msg

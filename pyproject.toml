@@ -39,7 +39,8 @@ Code = "https://github.com/jpal91/xontrib-chatgpt"
 
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0"]
+dev = ["pytest>=7.0", "yaml>=0.2.5"]
+yaml = ["yaml>=0.2.5"]
 
 
 
