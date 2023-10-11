@@ -1,5 +1,13 @@
 [
     {
+        "role": "system",
+        "content": "You are a helpful assistant."
+    },
+    {
+        "role": "system",
+        "content": "If your responses include code, make sure to wrap it in a markdown code block with the appropriate language.\nExample:\n```python\nprint('Hello World!')\n```"
+    },
+    {
         "role": "user",
         "content": "Please write me a hello world function"
     },

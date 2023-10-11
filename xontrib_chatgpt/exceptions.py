@@ -42,5 +42,14 @@ class InvalidConversationsTypeError(Exception):
     def __str__(self):
         return f"\n\x1b[1;31m{self.msg}"
 
+class MalformedSysMsgError(Exception):
+    """Raised when user attempts to set a malformed system message for a chat"""
+
+    def __init__(self, msg: str, *_):
+        self.msg = msg
+
+    def __str__(self):
+        return f"\x1b[1;31mIncorrect System Message Format:\n{self.msg}\nMust be a python list[dict], dict, or yaml equivalent. See documentation for more information."
+
 
 #############

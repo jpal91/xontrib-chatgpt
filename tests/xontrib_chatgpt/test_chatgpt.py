@@ -50,6 +50,7 @@ def temp_home(tmpdir_factory):
     fixtures = [
         "color_convo.txt",
         "no_color_convo.txt",
+        "no_color_convo2.txt",
         "convo.json",
         "convo2.json",
         "long_convo.txt",
@@ -100,12 +101,12 @@ def test_defualt_attribs(xession, chat):
     assert chat._tokens == []
     assert chat._max_tokens == 3000
     assert chat.alias == ""
-    assert chat.tokens == 0
+    assert chat.tokens == 53
 
 
 def test_tokens(xession, chat):
     chat._tokens = [1, 2, 3]
-    assert chat.tokens == 6
+    assert chat.tokens == 59
 
 
 def test_chat_raises_error_with_no_api_key(xession, chat, monkeypatch_openai):
@@ -138,18 +139,24 @@ def test_chat_response(xession, monkeypatch_openai, chat):
         {"role": "assistant", "content": "test"},
     ]
     assert chat._tokens == [1, 1]
-    assert chat.tokens == 2
+    assert chat.tokens == 55
 
 
 def test_trim(xession, chat):
-    chat._tokens = [1000, 1000, 1000]
+    chat._tokens = [1000, 1000, 900]
+    chat.messages = ["test", "test", "test"]
     chat._trim()
     assert len(chat._tokens) == 3
     chat._tokens.append(1000)
     chat.messages.append("test")
     chat._trim()
     assert len(chat._tokens) == 3
-    assert len(chat.messages) == 0
+    assert len(chat.messages) == 3
+
+def test_set_base_msgs(xession, chat):
+    assert chat._base_tokens == 53
+    chat.base = [{'role': 'system', 'content': 'test'}]
+    assert chat._base_tokens == 8
 
 
 def test__format_markdown(xession, chat):
@@ -165,7 +172,7 @@ def test__get_json_convo(xession, chat):
 
 
 @pytest.mark.parametrize(
-    ("n", "n_expected", "color"), [(0, 3, True), (1, 1, True), (-1, 2, False)]
+    ("n", "n_expected", "color"), [(0, 5, True), (1, 1, True), (-1, 2, False)]
 )
 def test__get_printed_convo(xession, n, n_expected, color, chat):
     chat.messages.extend(
@@ -221,6 +228,30 @@ def test_saves_convo(xession, chat, temp_home, mode, file, monkeypatch):
         expected = f.read().strip()
     assert res == expected
 
+def test_saves_with_override(xession, chat, temp_home, monkeypatch):
+    monkeypatch.setenv("USER", "user")
+    chat.messages.extend(
+        [
+            {"role": "user", "content": "Please write me a hello world function"},
+            {"role": "assistant", "content": MARKDOWN_BLOCK_2},
+            {"role": "user", "content": "test"},
+        ]
+    )
+    chat.save_convo(temp_home / 'test.txt', mode='json')
+    with open(temp_home / 'test.txt') as f:
+        cur = json.load(f)
+    chat.messages.pop()
+    monkeypatch.setattr('builtins.input', lambda _: 'y')
+    chat.save_convo(temp_home / 'test.txt', mode='json')
+    with open(temp_home / 'test.txt') as f:
+        new = json.load(f)
+    assert cur != new
+    cur = new
+    chat.messages.pop()
+    chat.save_convo(temp_home / 'test.txt', mode='json', override=True)
+    with open(temp_home / 'test.txt') as f:
+        new = json.load(f)
+    assert cur != new
 
 @pytest.mark.parametrize(
     ("alias", "json", "name"),
@@ -332,9 +363,10 @@ def test_enter_exit(xession, chat, capsys, monkeypatch_openai):
 
 
 def test_loads_from_convo(xession, temp_home):
-    chat_file = temp_home / "expected" / "no_color_convo.txt"
+    chat_file = temp_home / "expected" / "no_color_convo2.txt"
     new_cls = ChatGPT.fromconvo(chat_file)
     assert isinstance(new_cls, ChatGPT)
+    assert new_cls.base[0] == {'role': 'system', 'content': 'Test\n'}
     assert "Please write me a hello world function" in new_cls.messages[0]["content"]
 
 
@@ -366,12 +398,15 @@ def test_parses_text(xession, temp_home):
     with open(text_path) as f:
         exp_text = f.read()
 
-    res = parse_convo(exp_text)
-    assert len(res) == 6
+    msgs, base = parse_convo(exp_text)
+    assert len(msgs) == 6
+    assert len(base) == 1
 
-    for r in res:
+    for r in msgs:
         assert r["role"] in ["user", "assistant"]
         assert r["content"] != ""
+    
+    assert base[0] == {'role': 'system', 'content': 'This is a test.\n'}
 
 
 # get_token_list

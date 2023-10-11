@@ -1,7 +1,7 @@
 
 [project]
 name = "xontrib-chatgpt"
-version = "0.1.5"
+version = "0.1.6"
 license = {file = "LICENSE"}
 description = "Gives the ability to use ChatGPT directly from the command line"
 classifiers = [
@@ -39,7 +39,8 @@ Code = "https://github.com/jpal91/xontrib-chatgpt"
 
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0"]
+dev = ["pytest>=7.0", "pyyaml>=0.2.5"]
+yaml = ["pyyaml>=0.2.5"]
 
 
 

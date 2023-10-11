@@ -122,3 +122,11 @@ You can load a past conversation to a variable using the class method `ChatGPT.f
 ```xsh
 gpt = ChatGPT.fromconvo(path='path/to/my_convo.txt', alias='gpt')
 ```
+
+#### Version 0.1.3 Notes
+- `chat-manager` is meant to replace prior direct usage of utilizing the `ChatGPT` python class directly
+- Direct usage of `ChatGPT` will not be deprecated, yet, but the plan is to have `chat-manager` be the defacto usage of this package
+- `chat-manager` is also getting passed to the global ctx for debugging purposes for now as `chat_manager`, but will later be deprecated
+- The one-off alias `chatgpt` is also available, but will be deprecated in later versions
+- To see the original documentation on these, please visit the [old usage](/docs/old_usage.md) docs
+- Three new `xonsh` events were added to help manage changes see [events](/docs/events.md) for details

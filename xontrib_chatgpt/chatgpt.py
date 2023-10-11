@@ -109,14 +109,15 @@ class ChatGPT(Block):
         """
 
         self.alias = alias
-        self.base: list[dict[str, str]] = [
+        self._base: list[dict[str, str]] = [
             {"role": "system", "content": "You are a helpful assistant."},
             {
                 "role": "system",
-                "content": "If your responses include code, make sure to wrap it in a markdown code block with the appropriate language. \n Example: \n ```python \n print('Hello World!') \n ```",
+                "content": "If your responses include code, make sure to wrap it in a markdown code block with the appropriate language.\nExample:\n```python\nprint('Hello World!')\n```",
             },
         ]
         self.messages: list[dict[str, str]] = []
+        self._base_tokens: int = 53
         self._tokens: list = []
         self._max_tokens = 3000
         self._managed = managed
@@ -174,7 +175,16 @@ class ChatGPT(Block):
     @property
     def tokens(self) -> int:
         """Current convo tokens"""
-        return sum(self._tokens)
+        return self._base_tokens + sum(self._tokens)
+
+    @property
+    def base(self) -> list[dict[str, str]]:
+        return self._base
+
+    @base.setter
+    def base(self, msgs: list[dict[str, str]]) -> None:
+        self._base_tokens = sum(get_token_list(msgs))
+        self._base = msgs
 
     def stats(self) -> None:
         """Prints conversation stats to shell"""
@@ -240,7 +250,11 @@ class ChatGPT(Block):
             )
         except OpenAIError as e:
             self.messages.pop()
-            sys.exit(ansi_partial_color_format("{}OpenAI Error{}: {}".format('{BOLD_RED}', '{RESET}', e)))
+            sys.exit(
+                ansi_partial_color_format(
+                    "{}OpenAI Error{}: {}".format("{BOLD_RED}", "{RESET}", e)
+                )
+            )
 
         res_text = response["choices"][0]["message"]
         user_toks, gpt_toks = (
@@ -280,15 +294,18 @@ class ChatGPT(Block):
     def _get_json_convo(self, n: int) -> list[dict[str, str]]:
         """Returns the current conversation as a JSON string, up to n last items"""
         n = -n if n != 0 else 0
-        return json.dumps(self.messages[n:], indent=4)
+        messages = self.base + self.messages if n == 0 else self.messages[n:]
+
+        return json.dumps(messages, indent=4)
 
     def _get_printed_convo(self, n: int, color: bool = True) -> list[tuple[str, str]]:
         """Helper method to get up to n items of conversation, formatted for printing"""
         user = XSH.env.get("USER", "user")
         convo = []
         n = -n if n != 0 else 0
+        messages = self.base + self.messages if n == 0 else self.messages[n:]
 
-        for msg in self.messages[n:]:
+        for msg in messages:
             if msg["role"] == "user":
                 role = (
                     ansi_partial_color_format("{BOLD_GREEN}" + f"{user}:" + "{RESET}")
@@ -300,6 +317,12 @@ class ChatGPT(Block):
                     ansi_partial_color_format("{BOLD_BLUE}" + "ChatGPT:" + "{RESET}")
                     if color
                     else "ChatGPT:"
+                )
+            elif msg["role"] == "system":
+                role = (
+                    ansi_partial_color_format("{BOLD_BLUE}" + "System:" + "{RESET}")
+                    if color
+                    else "System:"
                 )
             else:
                 continue
@@ -352,7 +375,9 @@ class ChatGPT(Block):
             )
         print(rtn_str)
 
-    def _get_default_path(self, name: str = "", json_mode: bool = False) -> str:
+    def _get_default_path(
+        self, name: str = "", json_mode: bool = False, override: bool = False
+    ) -> str:
         """Helper method to get the default path for saving conversations"""
         user = XSH.env.get("USER", "user")
         data_dir = XSH.env.get(
@@ -370,7 +395,7 @@ class ChatGPT(Block):
             ".json" if json_mode else ".txt",
         )
 
-        if os.path.exists(f"{path_prefix}{ext}"):
+        if os.path.exists(f"{path_prefix}{ext}") and not override:
             while os.path.exists(path_prefix + f"_{idx}{ext}"):
                 idx += 1
             path = path_prefix + f"_{idx}{ext}"
@@ -379,7 +404,9 @@ class ChatGPT(Block):
 
         return path
 
-    def save_convo(self, path: str = "", name: str = "", mode: str = "text") -> None:
+    def save_convo(
+        self, path: str = "", name: str = "", mode: str = "text", override: bool = False
+    ) -> None:
         """
         Saves conversation to path or default xonsh data directory
 
@@ -395,6 +422,8 @@ class ChatGPT(Block):
         mode : str, optional
             Type of the conversation file. Defaults to 'text'.
             Options - 'text', 'json'
+        override : bool, optional
+            Whether or not to override existing files. Defaults to False.
 
         Returns
         -------
@@ -409,7 +438,14 @@ class ChatGPT(Block):
             raise NoConversationsError()
 
         if not path:
-            path = self._get_default_path(name=name, json_mode=mode == "json")
+            path = self._get_default_path(
+                name=name, json_mode=mode == "json", override=override
+            )
+        elif os.path.exists(path) and not override:
+            res = input(f"File already exists: {path}\nOverride? [Y/n]: ")
+
+            if res.lower() == "n":
+                return
 
         if mode == "text":
             convo = self._get_printed_convo(0, color=False)
@@ -494,15 +530,17 @@ class ChatGPT(Block):
         with open(path, "r") as f:
             convo = f.read()
 
-        messages = parse_convo(convo)
+        messages, base = parse_convo(convo)
         new_cls = cls(alias=alias, managed=managed)
         new_cls.messages = messages
+        if base:
+            new_cls.base = base
         new_cls._tokens = get_token_list(messages)
 
         return new_cls
 
 
-def parse_convo(convo: str) -> list[dict[str, str]]:
+def parse_convo(convo: str) -> tuple[list[dict[str, str]]]:
     """Parses a conversation from a saved file
 
     Parameters
@@ -512,8 +550,8 @@ def parse_convo(convo: str) -> list[dict[str, str]]:
 
     Returns
     -------
-    list[dict[str, str]]
-        Parsed conversation
+    tuple[list[dict[str, str]]]
+        Parsed conversation and base system messages
     """
     try:
         convo = json.loads(convo)
@@ -523,7 +561,7 @@ def parse_convo(convo: str) -> list[dict[str, str]]:
         return convo
 
     convo = convo.split("\n")
-    messages, user, idx, n = [], True, 0, len(convo)
+    messages, base, user, idx, n = [], [], True, 0, len(convo)
 
     # Couldn't figure out how to do this with regex, so while loop instead
     while idx < n:
@@ -531,10 +569,14 @@ def parse_convo(convo: str) -> list[dict[str, str]]:
             idx += 1
             continue
 
-        msg = {"role": "user" if user else "assistant", "content": ""}
+        if convo[idx].startswith("System"):
+            msg = {"role": "system", "content": ""}
+        else:
+            msg = {"role": "user" if user else "assistant", "content": ""}
+
         idx += 1
 
-        if idx == n:
+        if idx >= n:
             break
 
         while idx < n and convo[idx].startswith(" "):
@@ -542,10 +584,14 @@ def parse_convo(convo: str) -> list[dict[str, str]]:
             idx += 1
 
         msg["content"] = dedent(msg["content"])
-        messages.append(msg)
-        user = not user
 
-    return messages
+        if msg["role"] == "system":
+            base.append(msg)
+        else:
+            messages.append(msg)
+            user = not user
+
+    return messages, base
 
 
 def get_token_list(messages: list[dict[str, str]]) -> list[int]:
