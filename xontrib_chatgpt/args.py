@@ -125,6 +125,13 @@ def _cm_parse() -> ArgumentParser:
         choices=["text", "json"],
         help="Mode to print or save the conversation. Default is text",
     )
+    p_save.add_argument(
+        '-o',
+        '--overwrite',
+        action='store_true',
+        help='If set, overwrites the existing file with the same name. Otherwise, the file will be saved with a number appended to the end of the name.',
+        dest='override'
+    )
 
     p_print = subparser.add_parser("print", help="Print a chat", aliases=["p"])
     p_print.add_argument(

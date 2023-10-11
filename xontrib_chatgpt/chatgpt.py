@@ -371,7 +371,7 @@ class ChatGPT(Block):
             )
         print(rtn_str)
 
-    def _get_default_path(self, name: str = "", json_mode: bool = False) -> str:
+    def _get_default_path(self, name: str = "", json_mode: bool = False, override: bool = False) -> str:
         """Helper method to get the default path for saving conversations"""
         user = XSH.env.get("USER", "user")
         data_dir = XSH.env.get(
@@ -389,7 +389,7 @@ class ChatGPT(Block):
             ".json" if json_mode else ".txt",
         )
 
-        if os.path.exists(f"{path_prefix}{ext}"):
+        if os.path.exists(f"{path_prefix}{ext}") and not override:
             while os.path.exists(path_prefix + f"_{idx}{ext}"):
                 idx += 1
             path = path_prefix + f"_{idx}{ext}"
@@ -398,7 +398,7 @@ class ChatGPT(Block):
 
         return path
 
-    def save_convo(self, path: str = "", name: str = "", mode: str = "text") -> None:
+    def save_convo(self, path: str = "", name: str = "", mode: str = "text", override: bool = False) -> None:
         """
         Saves conversation to path or default xonsh data directory
 
@@ -414,6 +414,8 @@ class ChatGPT(Block):
         mode : str, optional
             Type of the conversation file. Defaults to 'text'.
             Options - 'text', 'json'
+        override : bool, optional
+            Whether or not to override existing files. Defaults to False.
 
         Returns
         -------
@@ -428,7 +430,12 @@ class ChatGPT(Block):
             raise NoConversationsError()
 
         if not path:
-            path = self._get_default_path(name=name, json_mode=mode == "json")
+            path = self._get_default_path(name=name, json_mode=mode == "json", override=override)
+        elif os.path.exists(path) and not override:
+            res = input(f"File already exists: {path}\nOverride? [Y/n]: ")
+
+            if res.lower() == 'n':
+                return
 
         if mode == "text":
             convo = self._get_printed_convo(0, color=False)

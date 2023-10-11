@@ -228,6 +228,30 @@ def test_saves_convo(xession, chat, temp_home, mode, file, monkeypatch):
         expected = f.read().strip()
     assert res == expected
 
+def test_saves_with_override(xession, chat, temp_home, monkeypatch):
+    monkeypatch.setenv("USER", "user")
+    chat.messages.extend(
+        [
+            {"role": "user", "content": "Please write me a hello world function"},
+            {"role": "assistant", "content": MARKDOWN_BLOCK_2},
+            {"role": "user", "content": "test"},
+        ]
+    )
+    chat.save_convo(temp_home / 'test.txt', mode='json')
+    with open(temp_home / 'test.txt') as f:
+        cur = json.load(f)
+    chat.messages.pop()
+    monkeypatch.setattr('builtins.input', lambda _: 'y')
+    chat.save_convo(temp_home / 'test.txt', mode='json')
+    with open(temp_home / 'test.txt') as f:
+        new = json.load(f)
+    assert cur != new
+    cur = new
+    chat.messages.pop()
+    chat.save_convo(temp_home / 'test.txt', mode='json', override=True)
+    with open(temp_home / 'test.txt') as f:
+        new = json.load(f)
+    assert cur != new
 
 @pytest.mark.parametrize(
     ("alias", "json", "name"),

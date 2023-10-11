@@ -122,7 +122,7 @@ class ChatManager:
         elif pargs.cmd == "load":
             return self.load(pargs.name[0])
         elif pargs.cmd == "save":
-            return self.save(chat_name=pargs.name, mode=pargs.mode)
+            return self.save(chat_name=pargs.name, mode=pargs.mode, override=pargs.override)
         elif pargs.cmd in ["print", "p"]:
             return self.print_chat(chat_name=pargs.name, n=pargs.n, mode=pargs.mode)
         elif pargs.cmd == "help":
@@ -213,7 +213,7 @@ class ChatManager:
 
         return f"Loaded chat {name} from {path}"
 
-    def save(self, chat_name: str = "", mode: str = "text") -> Optional[str]:
+    def save(self, chat_name: str = "", mode: str = "text", override: bool = False) -> Optional[str]:
         """Save a conversation to a file
 
         Parameters
