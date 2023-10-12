@@ -130,9 +130,18 @@ def test_chat_catches_openai_errors(xession, chat, monkeypatch):
     with pytest.raises(SystemExit):
         chat.chat("test")
 
+def test_chat_convo(xession, chat):
+    assert chat.chat_convo == chat.base
+    chat.messages =[
+        {"role": "user", "content": "test"},
+        {"role": "assistant", "content": "test"},
+    ]
+    chat.chat_idx -= 2
+    assert chat.chat_convo == chat.base + chat.messages
 
 def test_chat_response(xession, monkeypatch_openai, chat):
     xession.env["OPENAI_API_KEY"] = "test"
+    assert chat.chat_idx == 0
     chat.chat("test") == "test"
     assert chat.messages == [
         {"role": "user", "content": "test"},
@@ -140,8 +149,9 @@ def test_chat_response(xession, monkeypatch_openai, chat):
     ]
     assert chat._tokens == [1, 1]
     assert chat.tokens == 55
+    assert chat.chat_idx == -2
 
-
+@pytest.mark.skip()
 def test_trim(xession, chat):
     chat._tokens = [1000, 1000, 900]
     chat.messages = ["test", "test", "test"]
@@ -152,6 +162,19 @@ def test_trim(xession, chat):
     chat._trim()
     assert len(chat._tokens) == 3
     assert len(chat.messages) == 3
+
+def test_trim_convo(xession, chat):
+    toks = chat._tokens = [1000, 1000, 900]
+    idx = chat.chat_idx = -3
+    chat.trim_convo()
+    assert chat._tokens == toks
+    assert chat.chat_idx == idx
+    chat._tokens.append(1000)
+    chat.chat_idx -= 1
+    chat.trim_convo()
+    assert chat._tokens == toks
+    assert chat.chat_idx == idx
+
 
 def test_set_base_msgs(xession, chat):
     assert chat._base_tokens == 53

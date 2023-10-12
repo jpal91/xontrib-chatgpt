@@ -120,6 +120,7 @@ class ChatGPT(Block):
         self._base_tokens: int = 53
         self._tokens: list = []
         self._max_tokens = 3000
+        self.chat_idx = 0
         self._managed = managed
 
         if self.alias:
@@ -175,7 +176,7 @@ class ChatGPT(Block):
     @property
     def tokens(self) -> int:
         """Current convo tokens"""
-        return self._base_tokens + sum(self._tokens)
+        return self._base_tokens + sum(self._tokens[self.chat_idx:])
 
     @property
     def base(self) -> list[dict[str, str]]:
@@ -185,6 +186,10 @@ class ChatGPT(Block):
     def base(self, msgs: list[dict[str, str]]) -> None:
         self._base_tokens = sum(get_token_list(msgs))
         self._base = msgs
+    
+    @property
+    def chat_convo(self) -> list[dict[str, str]]:
+        return self.base + self.messages[self.chat_idx:]
 
     def stats(self) -> None:
         """Prints conversation stats to shell"""
@@ -242,14 +247,16 @@ class ChatGPT(Block):
             openai.api_key = api_key
 
         self.messages.append({"role": "user", "content": text})
+        self.chat_idx -= 1
 
         try:
             response = openai.ChatCompletion.create(
                 model=model,
-                messages=self.base + self.messages,
+                messages=self.chat_convo,
             )
         except OpenAIError as e:
             self.messages.pop()
+            self.chat_idx += 1
             sys.exit(
                 ansi_partial_color_format(
                     "{}OpenAI Error{}: {}".format("{BOLD_RED}", "{RESET}", e)
@@ -265,8 +272,8 @@ class ChatGPT(Block):
         self.messages.append(res_text)
         self._tokens.extend([user_toks, gpt_toks])
 
-        if self.tokens >= self._max_tokens:
-            self._trim()
+        self.chat_idx -= 1
+        self.trim_convo()
 
         return res_text["content"]
 
@@ -276,6 +283,10 @@ class ChatGPT(Block):
         while tokens > self._max_tokens:
             self.messages.pop(0)
             tokens -= self._tokens.pop(0)
+    
+    def trim_convo(self) -> None:
+        while self.tokens > self._max_tokens:
+            self.chat_idx += 1
 
     def _print_res(self, res: str) -> None:
         """Called after receiving response from ChatGPT, prints the response to the shell"""
