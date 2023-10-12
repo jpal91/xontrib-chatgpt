@@ -546,7 +546,10 @@ class ChatGPT(Block):
         new_cls.messages = messages
         if base:
             new_cls.base = base
+            new_cls._base_tokens = sum(get_token_list(base))
         new_cls._tokens = get_token_list(messages)
+        new_cls.chat_idx = -len(messages)
+        new_cls.trim_convo()
 
         return new_cls
 
@@ -569,7 +572,13 @@ def parse_convo(convo: str) -> tuple[list[dict[str, str]]]:
     except json.JSONDecodeError:
         pass
     else:
-        return convo
+        base, messages = [], []
+        for msg in convo:
+            if msg["role"] == "system":
+                base.append(msg)
+            else:
+                messages.append(msg)
+        return messages, base
 
     convo = convo.split("\n")
     messages, base, user, idx, n = [], [], True, 0, len(convo)

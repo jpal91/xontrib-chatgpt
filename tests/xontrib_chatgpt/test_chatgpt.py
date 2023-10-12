@@ -404,6 +404,15 @@ def test_loads_from_convo_raises_file_not_found(xession, temp_home):
     with pytest.raises(FileNotFoundError):
         ChatGPT.fromconvo("invalid.txt")
 
+def test_loads_and_trims(xession, temp_home, monkeypatch):
+    chat_file = temp_home / 'expected' / 'convo2.json'
+    def trim_convo(self):
+        while self.tokens > 500:
+            print(self.tokens)
+            self.chat_idx += 1
+    monkeypatch.setattr('xontrib_chatgpt.chatgpt.ChatGPT.trim_convo', trim_convo)
+    new_cls = ChatGPT.fromconvo(chat_file)
+    assert new_cls.chat_idx == -2
 
 # parse_convo
 
