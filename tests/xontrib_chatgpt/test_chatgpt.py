@@ -182,12 +182,6 @@ def test_set_base_msgs(xession, chat):
     assert chat._base_tokens == 8
 
 
-def test__format_markdown(xession, chat):
-    md = chat._format_markdown(MARKDOWN_BLOCK)
-    assert "\x1b" in md
-    assert "```" not in md
-
-
 def test__get_json_convo(xession, chat):
     chat.messages.append({"role": "user", "content": "test"})
     res = chat._get_json_convo(n=1)
@@ -412,44 +406,6 @@ def test_loads_and_trims(xession, temp_home, monkeypatch):
     monkeypatch.setattr('xontrib_chatgpt.chatgpt.ChatGPT.trim_convo', trim_convo)
     new_cls = ChatGPT.fromconvo(chat_file)
     assert new_cls.chat_idx == -1
-
-# parse_convo
-
-
-def test_parses_json(xession, temp_home):
-    json_path = temp_home / "expected" / "convo.json"
-    with open(json_path) as f:
-        exp_json = f.read()
-    msg, base = parse_convo(exp_json)
-    assert base + msg == json.loads(exp_json)
-
-
-def test_parses_text(xession, temp_home):
-    text_path = temp_home / "expected" / "long_convo.txt"
-    with open(text_path) as f:
-        exp_text = f.read()
-
-    msgs, base = parse_convo(exp_text)
-    assert len(msgs) == 6
-    assert len(base) == 1
-
-    for r in msgs:
-        assert r["role"] in ["user", "assistant"]
-        assert r["content"] != ""
-    
-    assert base[0] == {'role': 'system', 'content': 'This is a test.\n'}
-
-
-# get_token_list
-
-
-def test_get_token_list(xession, temp_home):
-    json_path = temp_home / "expected" / "convo2.json"
-    with open(json_path) as f:
-        exp_json = json.load(f)
-    res = get_token_list(exp_json)
-    assert len(res) == 7
-    assert sum(res) == 835
 
 
 @pytest.fixture

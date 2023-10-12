@@ -12,16 +12,15 @@ from xonsh.ansi_colors import ansi_partial_color_format
 from xonsh.lazyasd import LazyObject
 
 from xontrib_chatgpt.chatgpt import ChatGPT
-from xontrib_chatgpt.lazyobjs import _FIND_NAME_REGEX, _YAML
+from xontrib_chatgpt.utils import convert_to_sys
+from xontrib_chatgpt.lazyobjs import _FIND_NAME_REGEX
 from xontrib_chatgpt.args import _cm_parse
 from xontrib_chatgpt.exceptions import (
-    MalformedSysMsgError,
     NoConversationsError,
     InvalidConversationsTypeError,
 )
 
 FIND_NAME_REGEX: Pattern = LazyObject(_FIND_NAME_REGEX, globals(), "FIND_NAME_REGEX")
-YAML = LazyObject(_YAML, globals(), "YAML")
 PARSER: ArgumentParser = LazyObject(_cm_parse, globals(), "PARSER")
 
 TUTORIAL = """
@@ -455,59 +454,6 @@ class ChatManager:
     def tutorial(self) -> str:
         """Returns a usage string for the xontrib."""
         return ansi_partial_color_format(TUTORIAL)
-
-
-def convert_to_sys(msgs: Union[str, dict, list]) -> list[dict]:
-    """Returns a list of dicts from a string of python dict, json, or yaml.
-    Calls itself recursively until the result is either a list[dict]
-    or raises an error.
-
-    Will attempt to parse yaml only if package is installed.
-
-    Parameters
-    ----------
-    msgs : Union[str, dict, list]
-        Messages to convert to system messages
-
-    Returns
-    -------
-    list[dict]
-
-    Raises
-    ------
-    MalformedSysMsgError
-        Raised when the messages are not properly formatted
-
-    Examples
-    --------
-    msgs :
-        '[{"role": "system", "content": "Hello"}, {"role": "system", "content": "Hi there!"}]'
-        '{"role": "system", "content": "Hello"}'
-        '- role: system\n  content: Hello\n- role: system\n  content: Hi there!'
-    """
-
-    if isinstance(msgs, str):
-        msgs = msgs.strip()
-        try:
-            msgs = eval(msgs)
-        except SyntaxError:
-            pass
-
-    if isinstance(msgs, dict):
-        return convert_to_sys([msgs])
-    elif isinstance(msgs, list):
-        for m in msgs:
-            if "content" not in m:
-                raise MalformedSysMsgError(msgs)
-            m["role"] = "system"
-        return msgs
-    elif YAML is not None:
-        try:
-            return YAML.safe_load(msgs)
-        except YAML.YAMLError:
-            pass
-
-    raise MalformedSysMsgError(msgs)
 
 
 # TODO: Print from a saved file

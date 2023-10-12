@@ -3,11 +3,9 @@ import sys
 import os
 import json
 import weakref
-from datetime import datetime
 from typing import TextIO
-from textwrap import dedent
 from xonsh.built_ins import XSH
-from xonsh.tools import print_color, indent
+from xonsh.tools import indent
 from xonsh.contexts import Block
 from xonsh.lazyasd import LazyObject
 from xonsh.ansi_colors import ansi_partial_color_format
@@ -16,11 +14,13 @@ from openai.error import OpenAIError
 from xontrib_chatgpt.args import _gpt_parse
 from xontrib_chatgpt.lazyobjs import (
     _openai,
-    _MULTI_LINE_CODE,
-    _SINGLE_LINE_CODE,
-    _PYGMENTS,
-    _markdown,
-    _tiktoken,
+)
+from xontrib_chatgpt.utils import (
+    get_token_list,
+    parse_convo,
+    print_res,
+    format_markdown,
+    get_default_path
 )
 from xontrib_chatgpt.exceptions import (
     NoApiKeyError,
@@ -30,11 +30,6 @@ from xontrib_chatgpt.exceptions import (
 )
 
 openai = LazyObject(_openai, globals(), "openai")
-tiktoken = LazyObject(_tiktoken, globals(), "tiktoken")
-MULTI_LINE_CODE = LazyObject(_MULTI_LINE_CODE, globals(), "MULTI_LINE_CODE")
-SINGLE_LINE_CODE = LazyObject(_SINGLE_LINE_CODE, globals(), "SINGLE_LINE_CODE")
-PYGMENTS = LazyObject(_PYGMENTS, globals(), "PYGMENTS")
-markdown = LazyObject(_markdown, globals(), "markdown")
 parse = LazyObject(_gpt_parse, globals(), "parse")
 
 DOCSTRING = """\
@@ -133,7 +128,7 @@ class ChatGPT(Block):
 
     def __enter__(self):
         res = self.chat(self.macro_block.strip())
-        self._print_res(res)
+        print_res(res)
         return self
 
     def __exit__(self, *_):
@@ -152,7 +147,7 @@ class ChatGPT(Block):
 
         if pargs.cmd == "send":
             res = self.chat(" ".join(pargs.text))
-            self._print_res(res)
+            print_res(res)
         elif pargs.cmd == "print":
             self.print_convo(pargs.n, pargs.mode)
         elif pargs.cmd == "save":
@@ -281,20 +276,6 @@ class ChatGPT(Block):
         while self.chat_idx < -1 and self.tokens > self._max_tokens:
             self.chat_idx += 1
 
-    def _print_res(self, res: str) -> None:
-        """Called after receiving response from ChatGPT, prints the response to the shell"""
-        res = self._format_markdown(res)
-        res = indent(res)
-        print(ansi_partial_color_format("\n{BOLD_BLUE}ChatGPT:{RESET}\n"))
-        print(res)
-
-    def _format_markdown(self, text: str) -> str:
-        """Formats the text using the Pygments Markdown Lexer, removes markdown code '`'s"""
-        text = markdown(text)
-        text = MULTI_LINE_CODE.sub("", text)
-        text = SINGLE_LINE_CODE.sub(r"\1", text)
-        return text
-
     def _get_json_convo(self, n: int) -> list[dict[str, str]]:
         """Returns the current conversation as a JSON string, up to n last items"""
         n = -n if n != 0 else 0
@@ -332,7 +313,7 @@ class ChatGPT(Block):
                 continue
 
             if color:
-                content = self._format_markdown(msg["content"])
+                content = format_markdown(msg["content"])
             else:
                 content = msg["content"]
 
@@ -379,35 +360,6 @@ class ChatGPT(Block):
             )
         print(rtn_str)
 
-    def _get_default_path(
-        self, name: str = "", json_mode: bool = False, override: bool = False
-    ) -> str:
-        """Helper method to get the default path for saving conversations"""
-        user = XSH.env.get("USER", "user")
-        data_dir = XSH.env.get(
-            "XONSH_DATA_DIR",
-            os.path.join(os.path.expanduser("~"), ".local", "share", "xonsh"),
-        )
-        chat_dir = os.path.join(data_dir, "chatgpt")
-
-        if not os.path.exists(chat_dir):
-            os.makedirs(chat_dir)
-
-        date, idx = datetime.now().strftime("%Y-%m-%d"), 1
-        path_prefix, ext = (
-            os.path.join(chat_dir, f"{user}_{name or self.alias or 'chatgpt'}_{date}"),
-            ".json" if json_mode else ".txt",
-        )
-
-        if os.path.exists(f"{path_prefix}{ext}") and not override:
-            while os.path.exists(path_prefix + f"_{idx}{ext}"):
-                idx += 1
-            path = path_prefix + f"_{idx}{ext}"
-        else:
-            path = path_prefix + f"{ext}"
-
-        return path
-
     def save_convo(
         self, path: str = "", name: str = "", mode: str = "text", override: bool = False
     ) -> None:
@@ -442,8 +394,8 @@ class ChatGPT(Block):
             raise NoConversationsError()
 
         if not path:
-            path = self._get_default_path(
-                name=name, json_mode=mode == "json", override=override
+            path = get_default_path(
+                name=name, json_mode=mode == "json", override=override, alias=self.alias
             )
         elif os.path.exists(path) and not override:
             res = input(f"File already exists: {path}\nOverride? [Y/n]: ")
@@ -545,89 +497,3 @@ class ChatGPT(Block):
         new_cls.trim_convo()
 
         return new_cls
-
-
-def parse_convo(convo: str) -> tuple[list[dict[str, str]]]:
-    """Parses a conversation from a saved file
-
-    Parameters
-    ----------
-    convo : str
-        Conversation to parse
-
-    Returns
-    -------
-    tuple[list[dict[str, str]]]
-        Parsed conversation and base system messages
-    """
-    try:
-        convo = json.loads(convo)
-    except json.JSONDecodeError:
-        pass
-    else:
-        base, messages = [], []
-        for msg in convo:
-            if msg["role"] == "system":
-                base.append(msg)
-            else:
-                messages.append(msg)
-        return messages, base
-
-    convo = convo.split("\n")
-    messages, base, user, idx, n = [], [], True, 0, len(convo)
-
-    # Couldn't figure out how to do this with regex, so while loop instead
-    while idx < n:
-        if not convo[idx]:
-            idx += 1
-            continue
-
-        if convo[idx].startswith("System"):
-            msg = {"role": "system", "content": ""}
-        else:
-            msg = {"role": "user" if user else "assistant", "content": ""}
-
-        idx += 1
-
-        if idx >= n:
-            break
-
-        while idx < n and convo[idx].startswith(" "):
-            msg["content"] += convo[idx] + "\n"
-            idx += 1
-
-        msg["content"] = dedent(msg["content"])
-
-        if msg["role"] == "system":
-            base.append(msg)
-        else:
-            messages.append(msg)
-            user = not user
-
-    return messages, base
-
-
-def get_token_list(messages: list[dict[str, str]]) -> list[int]:
-    """Gets the chat tokens for the loaded conversation
-
-    Parameters
-    ----------
-    messages : list[dict[str, str]]
-        Messages from the conversation
-
-    Returns
-    -------
-    list[int]
-        List of tokens for each message
-    """
-    tokens_per_message = 3
-    tokens = [3]
-
-    for message in messages:
-        num_tokens = 0
-        num_tokens += tokens_per_message
-        for v in message.values():
-            num_tokens += len(tiktoken.encode(v))
-        tokens.append(num_tokens)
-
-    return tokens
