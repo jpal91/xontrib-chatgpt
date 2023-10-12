@@ -285,7 +285,7 @@ class ChatGPT(Block):
             tokens -= self._tokens.pop(0)
     
     def trim_convo(self) -> None:
-        while self.tokens > self._max_tokens:
+        while self.chat_idx < -1 and self.tokens > self._max_tokens:
             self.chat_idx += 1
 
     def _print_res(self, res: str) -> None:

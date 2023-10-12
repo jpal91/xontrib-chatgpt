@@ -407,12 +407,11 @@ def test_loads_from_convo_raises_file_not_found(xession, temp_home):
 def test_loads_and_trims(xession, temp_home, monkeypatch):
     chat_file = temp_home / 'expected' / 'convo2.json'
     def trim_convo(self):
-        while self.tokens > 500:
-            print(self.tokens)
+        while self.tokens > 650:
             self.chat_idx += 1
     monkeypatch.setattr('xontrib_chatgpt.chatgpt.ChatGPT.trim_convo', trim_convo)
     new_cls = ChatGPT.fromconvo(chat_file)
-    assert new_cls.chat_idx == -2
+    assert new_cls.chat_idx == -1
 
 # parse_convo
 
@@ -421,8 +420,8 @@ def test_parses_json(xession, temp_home):
     json_path = temp_home / "expected" / "convo.json"
     with open(json_path) as f:
         exp_json = f.read()
-
-    assert parse_convo(exp_json) == json.loads(exp_json)
+    msg, base = parse_convo(exp_json)
+    assert base + msg == json.loads(exp_json)
 
 
 def test_parses_text(xession, temp_home):
@@ -457,10 +456,10 @@ def test_get_token_list(xession, temp_home):
 def inc_test(xession):
     xession.ctx["test"] = 0
 
-    def inc_test(**kw):
+    def _inc_test(**_):
         xession.ctx["test"] += 1
 
-    return inc_test
+    return _inc_test
 
 
 def test_on_chat_create_handler(xession, cm_events, inc_test):
