@@ -276,13 +276,6 @@ class ChatGPT(Block):
         self.trim_convo()
 
         return res_text["content"]
-
-    def _trim(self) -> None:
-        """Trims conversation to make sure it doesn't exceed the max tokens"""
-        tokens = self.tokens
-        while tokens > self._max_tokens:
-            self.messages.pop(0)
-            tokens -= self._tokens.pop(0)
     
     def trim_convo(self) -> None:
         while self.chat_idx < -1 and self.tokens > self._max_tokens:
