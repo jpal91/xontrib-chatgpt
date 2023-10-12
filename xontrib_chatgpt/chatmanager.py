@@ -240,7 +240,7 @@ class ChatManager:
         chat = self.get_chat_by_name(chat_name)
 
         try:
-            res = chat["inst"].save_convo(mode=mode)
+            res = chat["inst"].save_convo(mode=mode, override=override)
         except (NoConversationsError, InvalidConversationsTypeError) as e:
             print(e)
             sys.exit(1)
