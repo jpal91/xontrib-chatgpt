@@ -97,7 +97,7 @@ chat-manager?
    - Allow customizable max tokens
    - Allow each chat to have separate models (ie 3.5-turbo, 4, etc.)
    - Timeouts on long responses
-   - Update individual instance system messages/chat instructions
+   - ~~Update individual instance system messages/chat instructions~~ **NEW in v0.1.6**
 - **Additional Models**
    - Open up the ability to use other models besides 3.5 and 4
 - ~~**Completions**~~ **NEW in v0.1.5**
