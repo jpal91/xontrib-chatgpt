@@ -86,10 +86,9 @@ chat-manager?
 
 ⭐ **BONUS**: If [xontrib-abbrevs](https://github.com/xonsh/xontrib-abbrevs) is loaded, use `cm` to expand to `chat-manager`
 
-#### Version 0.1.6 Notes
-- Added the ability to edit ChatGPT system messages
-- Saved convos now include system messages so conversation can continue with same instructions when loaded
-- See [Edit System Messages](docs/edit_sys_messages.md) for more details
+#### See Also
+- [Tips and Tricks](/docs/tips_and_tricks.md)
+- [How To Edit System Messages](/docs/edit_sys_messages.md)
 
 ## Future Plans
 - **Streaming Responses**
