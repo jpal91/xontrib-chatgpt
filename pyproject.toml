@@ -1,7 +1,7 @@
 
 [project]
 name = "xontrib-chatgpt"
-version = "0.1.6"
+version = "0.2.0"
 license = {file = "LICENSE"}
 description = "Gives the ability to use ChatGPT directly from the command line"
 classifiers = [

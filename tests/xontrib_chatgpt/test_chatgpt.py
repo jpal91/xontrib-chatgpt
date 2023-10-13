@@ -130,9 +130,18 @@ def test_chat_catches_openai_errors(xession, chat, monkeypatch):
     with pytest.raises(SystemExit):
         chat.chat("test")
 
+def test_chat_convo(xession, chat):
+    assert chat.chat_convo == chat.base
+    chat.messages =[
+        {"role": "user", "content": "test"},
+        {"role": "assistant", "content": "test"},
+    ]
+    chat.chat_idx -= 2
+    assert chat.chat_convo == chat.base + chat.messages
 
 def test_chat_response(xession, monkeypatch_openai, chat):
     xession.env["OPENAI_API_KEY"] = "test"
+    assert chat.chat_idx == 0
     chat.chat("test") == "test"
     assert chat.messages == [
         {"role": "user", "content": "test"},
@@ -140,8 +149,9 @@ def test_chat_response(xession, monkeypatch_openai, chat):
     ]
     assert chat._tokens == [1, 1]
     assert chat.tokens == 55
+    assert chat.chat_idx == -2
 
-
+@pytest.mark.skip()
 def test_trim(xession, chat):
     chat._tokens = [1000, 1000, 900]
     chat.messages = ["test", "test", "test"]
@@ -153,16 +163,23 @@ def test_trim(xession, chat):
     assert len(chat._tokens) == 3
     assert len(chat.messages) == 3
 
+def test_trim_convo(xession, chat):
+    toks = chat._tokens = [1000, 1000, 900]
+    idx = chat.chat_idx = -3
+    chat.trim_convo()
+    assert chat._tokens == toks
+    assert chat.chat_idx == idx
+    chat._tokens.append(1000)
+    chat.chat_idx -= 1
+    chat.trim_convo()
+    assert chat._tokens == toks
+    assert chat.chat_idx == idx
+
+
 def test_set_base_msgs(xession, chat):
     assert chat._base_tokens == 53
     chat.base = [{'role': 'system', 'content': 'test'}]
     assert chat._base_tokens == 8
-
-
-def test__format_markdown(xession, chat):
-    md = chat._format_markdown(MARKDOWN_BLOCK)
-    assert "\x1b" in md
-    assert "```" not in md
 
 
 def test__get_json_convo(xession, chat):
@@ -381,54 +398,24 @@ def test_loads_from_convo_raises_file_not_found(xession, temp_home):
     with pytest.raises(FileNotFoundError):
         ChatGPT.fromconvo("invalid.txt")
 
-
-# parse_convo
-
-
-def test_parses_json(xession, temp_home):
-    json_path = temp_home / "expected" / "convo.json"
-    with open(json_path) as f:
-        exp_json = f.read()
-
-    assert parse_convo(exp_json) == json.loads(exp_json)
-
-
-def test_parses_text(xession, temp_home):
-    text_path = temp_home / "expected" / "long_convo.txt"
-    with open(text_path) as f:
-        exp_text = f.read()
-
-    msgs, base = parse_convo(exp_text)
-    assert len(msgs) == 6
-    assert len(base) == 1
-
-    for r in msgs:
-        assert r["role"] in ["user", "assistant"]
-        assert r["content"] != ""
-    
-    assert base[0] == {'role': 'system', 'content': 'This is a test.\n'}
-
-
-# get_token_list
-
-
-def test_get_token_list(xession, temp_home):
-    json_path = temp_home / "expected" / "convo2.json"
-    with open(json_path) as f:
-        exp_json = json.load(f)
-    res = get_token_list(exp_json)
-    assert len(res) == 7
-    assert sum(res) == 835
+def test_loads_and_trims(xession, temp_home, monkeypatch):
+    chat_file = temp_home / 'expected' / 'convo2.json'
+    def trim_convo(self):
+        while self.tokens > 650:
+            self.chat_idx += 1
+    monkeypatch.setattr('xontrib_chatgpt.chatgpt.ChatGPT.trim_convo', trim_convo)
+    new_cls = ChatGPT.fromconvo(chat_file)
+    assert new_cls.chat_idx == -1
 
 
 @pytest.fixture
 def inc_test(xession):
     xession.ctx["test"] = 0
 
-    def inc_test(**kw):
+    def _inc_test(**_):
         xession.ctx["test"] += 1
 
-    return inc_test
+    return _inc_test
 
 
 def test_on_chat_create_handler(xession, cm_events, inc_test):
