@@ -50,7 +50,7 @@ Use `chat-manager` to easily create and manage new chats
 
 ```xsh
 chat-manager add gpt
-gpt "Hello, what's your name?"
+gpt! Hello, what's your name?
 # ChatGPT responds here
 ```
 
