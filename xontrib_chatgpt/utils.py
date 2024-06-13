@@ -1,4 +1,5 @@
 """Utility Functions for xontrib-chatgpt"""
+
 import os
 import json
 from typing import Union
@@ -157,6 +158,7 @@ def get_default_path(
         path = path_prefix + f"{ext}"
 
     return path
+
 
 def convert_to_sys(msgs: Union[str, dict, list]) -> list[dict]:
     """Returns a list of dicts from a string of python dict, json, or yaml.

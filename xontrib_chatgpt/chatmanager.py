@@ -1,4 +1,5 @@
 """Module for ChatManager to manage multiple chats"""
+
 import os
 import sys
 import weakref
@@ -197,8 +198,9 @@ class ChatManager:
         str
         """
         if os.path.exists(path_or_name):
-            path, name = path_or_name, FIND_NAME_REGEX.sub(
-                r"\1", os.path.basename(path_or_name)
+            path, name = (
+                path_or_name,
+                FIND_NAME_REGEX.sub(r"\1", os.path.basename(path_or_name)),
             )
         else:
             path, name = self._find_path_from_name(path_or_name)

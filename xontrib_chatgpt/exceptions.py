@@ -1,5 +1,6 @@
 """Exceptions for the ChatGPT class"""
 
+
 #############
 # Exceptions
 #############
@@ -41,6 +42,7 @@ class InvalidConversationsTypeError(Exception):
 
     def __str__(self):
         return f"\n\x1b[1;31m{self.msg}"
+
 
 class MalformedSysMsgError(Exception):
     """Raised when user attempts to set a malformed system message for a chat"""
