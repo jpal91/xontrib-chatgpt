@@ -2,7 +2,7 @@
 [project]
 name = "xontrib-chatgpt"
 version = "0.2.2"
-license = {file = "LICENSE"}
+license = { file = "LICENSE" }
 description = "Gives the ability to use ChatGPT directly from the command line"
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -13,19 +13,21 @@ classifiers = [
     "Topic :: Terminals",
 ]
 requires-python = ">=3.9"
-dependencies = ["xonsh>=0.12.5", "prompt_toolkit>=3.0.36", "openai>=0.28.0, < 1", "pygments>=2.16.1", "tiktoken>=0.5.1"]
-authors = [
-    { name = "Justin Pallansch", email = "pallanschja@gmail.com" },
+dependencies = [
+    "xonsh>=0.12.5",
+    "prompt_toolkit>=3.0.36",
+    "openai>=0.28.0, < 1",
+    "pygments>=2.16.1",
+    "tiktoken>=0.5.1",
 ]
+authors = [{ name = "Justin Pallansch", email = "pallanschja@gmail.com" }]
 [project.readme]
 file = "README.md"
 content-type = "text/markdown"
 
 
-
 # [project.entry-points."xonsh.xontribs"]
 # "chatgpt" = "xontrib.chatgpt"
-
 
 
 [project.urls]
@@ -36,29 +38,25 @@ Code = "https://github.com/jpal91/xontrib-chatgpt"
 "Issue tracker" = "https://github.com/jpal91/xontrib-chatgpt/issues"
 
 
-
-
 [project.optional-dependencies]
 dev = ["pytest>=7.0", "pyyaml>=0.2.5"]
 yaml = ["pyyaml>=0.2.5"]
 
 
-
 [build-system]
 requires = [
     "setuptools>=62",
-    "wheel",               # for bdist package distribution
+    "wheel",          # for bdist package distribution
 ]
 build-backend = "setuptools.build_meta"
 [tool.setuptools]
-packages=["xontrib", "xontrib_chatgpt"]
-package-dir = {xontrib = "xontrib", xontrib_chatgpt = "xontrib_chatgpt"}
+packages = ["xontrib", "xontrib_chatgpt"]
+package-dir = { xontrib = "xontrib", xontrib_chatgpt = "xontrib_chatgpt" }
 
 
 platforms = ["any"]
 include-package-data = false
 [tool.setuptools.package-data]
-    
 
 
 [tool.black]
@@ -80,13 +78,13 @@ force-exclude = '''
 )/
 '''
 
-[tool.ruff]
+[tool.ruff.lint]
 select = [
     "E",
     "F",
-    "B", # flake8-bugbear
-    "I", # isort
-    "UP", # pyupgrade
+    "B",   # flake8-bugbear
+    "I",   # isort
+    "UP",  # pyupgrade
     "SIM", # simplify
     "TCH", # flake8-type-checking
     "RUF", # ruff specific rules
