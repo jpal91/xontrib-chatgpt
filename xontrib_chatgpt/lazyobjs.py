@@ -2,6 +2,11 @@
 
 import re
 from collections import namedtuple
+from xonsh.built_ins import XSH
+from xontrib_chatgpt.exceptions import (
+    NoApiKeyError,
+)
+from openai import OpenAI
 
 #############
 # Lazy Objects
@@ -10,9 +15,11 @@ from collections import namedtuple
 
 def _openai():
     """Imports openai"""
-    import openai
 
-    return openai
+    api_key = XSH.env.get("OPENAI_API_KEY", None)
+    if not api_key:
+        raise NoApiKeyError()
+    return OpenAI(api_key=str(api_key))
 
 
 def _tiktoken():
