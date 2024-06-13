@@ -3,8 +3,13 @@ import json
 import shutil
 import pytest
 from datetime import datetime
-from openai.error import RateLimitError
-from xontrib_chatgpt.chatgpt import ChatGPT, parse_convo, get_token_list
+from unittest.mock import MagicMock, Mock, create_autospec
+from openai import RateLimitError, OpenAI
+from openai.resources import Chat
+from openai.types.chat.chat_completion import ChatCompletion, Choice
+from openai.types.completion_usage import CompletionUsage
+from openai.types.chat.chat_completion_message import ChatCompletionMessage
+from xontrib_chatgpt.chatgpt import ChatGPT
 from xontrib_chatgpt.exceptions import (
     NoApiKeyError,
     UnsupportedModelError,
@@ -27,17 +32,6 @@ def hello_world():
     print('Hello world!')
 ```
 """
-
-
-class DummyAI:
-    def __init__(self):
-        self.api_key = None
-
-    def create(self, **_):
-        return {
-            "choices": [{"message": {"content": "test", "role": "assistant"}}],
-            "usage": {"prompt_tokens": 1, "completion_tokens": 1},
-        }
 
 
 @pytest.fixture(scope="module")
@@ -65,9 +59,23 @@ def temp_home(tmpdir_factory):
 
 @pytest.fixture
 def monkeypatch_openai(monkeypatch):
-    dummy_ai = DummyAI()
-    dummy_ai.ChatCompletion = DummyAI()
-    monkeypatch.setattr("xontrib_chatgpt.chatgpt.openai", dummy_ai)
+    dummy_instance = MagicMock()
+    dummy_ai = Mock(spec=OpenAI)
+    dummy_ai.return_value = dummy_instance
+
+    choice = Mock(spec=Choice)
+    choice.message = {"content": "test", "role": "assistant"}
+    choices = [choice]
+    usage = Mock(spec=CompletionUsage)
+    usage.prompt_tokens = 1
+    usage.completion_tokens = 1
+
+    response = Mock(spec=ChatCompletion)
+    response.choices = choices
+    response.usage = usage
+
+    dummy_instance.chat.completions.create.return_value = response
+    monkeypatch.setattr("xontrib_chatgpt.chatgpt.openai", dummy_instance)
 
 
 @pytest.fixture
@@ -109,7 +117,7 @@ def test_tokens(xession, chat):
     assert chat.tokens == 59
 
 
-def test_chat_raises_error_with_no_api_key(xession, chat, monkeypatch_openai):
+def test_chat_raises_error_with_no_api_key(xession, chat):
     xession.env["OPENAI_API_KEY"] = ""
     with pytest.raises(NoApiKeyError):
         chat.chat("test")
@@ -121,23 +129,28 @@ def test_chat_raises_error_with_no_chat_model(xession, chat, monkeypatch_openai)
     with pytest.raises(UnsupportedModelError):
         chat.chat("test")
 
+
 def test_chat_catches_openai_errors(xession, chat, monkeypatch):
     xession.env["OPENAI_API_KEY"] = "test"
     xession.env["OPENAI_CHAT_MODEL"] = "gpt-3.5-turbo"
+
     def raise_it(*_, **__):
-        raise RateLimitError('test')
-    monkeypatch.setattr('xontrib_chatgpt.chatgpt.openai.ChatCompletion.create', raise_it)
+        raise RateLimitError("test")
+
+    monkeypatch.setattr("xontrib_chatgpt.chatgpt.openai.completions.create", raise_it)
     with pytest.raises(SystemExit):
         chat.chat("test")
 
+
 def test_chat_convo(xession, chat):
     assert chat.chat_convo == chat.base
-    chat.messages =[
+    chat.messages = [
         {"role": "user", "content": "test"},
         {"role": "assistant", "content": "test"},
     ]
     chat.chat_idx -= 2
     assert chat.chat_convo == chat.base + chat.messages
+
 
 def test_chat_response(xession, monkeypatch_openai, chat):
     xession.env["OPENAI_API_KEY"] = "test"
@@ -151,6 +164,7 @@ def test_chat_response(xession, monkeypatch_openai, chat):
     assert chat.tokens == 55
     assert chat.chat_idx == -2
 
+
 @pytest.mark.skip()
 def test_trim(xession, chat):
     chat._tokens = [1000, 1000, 900]
@@ -162,6 +176,7 @@ def test_trim(xession, chat):
     chat._trim()
     assert len(chat._tokens) == 3
     assert len(chat.messages) == 3
+
 
 def test_trim_convo(xession, chat):
     toks = chat._tokens = [1000, 1000, 900]
@@ -178,7 +193,7 @@ def test_trim_convo(xession, chat):
 
 def test_set_base_msgs(xession, chat):
     assert chat._base_tokens == 53
-    chat.base = [{'role': 'system', 'content': 'test'}]
+    chat.base = [{"role": "system", "content": "test"}]
     assert chat._base_tokens == 8
 
 
@@ -245,6 +260,7 @@ def test_saves_convo(xession, chat, temp_home, mode, file, monkeypatch):
         expected = f.read().strip()
     assert res == expected
 
+
 def test_saves_with_override(xession, chat, temp_home, monkeypatch):
     monkeypatch.setenv("USER", "user")
     chat.messages.extend(
@@ -254,21 +270,22 @@ def test_saves_with_override(xession, chat, temp_home, monkeypatch):
             {"role": "user", "content": "test"},
         ]
     )
-    chat.save_convo(temp_home / 'test.txt', mode='json')
-    with open(temp_home / 'test.txt') as f:
+    chat.save_convo(temp_home / "test.txt", mode="json")
+    with open(temp_home / "test.txt") as f:
         cur = json.load(f)
     chat.messages.pop()
-    monkeypatch.setattr('builtins.input', lambda _: 'y')
-    chat.save_convo(temp_home / 'test.txt', mode='json')
-    with open(temp_home / 'test.txt') as f:
+    monkeypatch.setattr("builtins.input", lambda _: "y")
+    chat.save_convo(temp_home / "test.txt", mode="json")
+    with open(temp_home / "test.txt") as f:
         new = json.load(f)
     assert cur != new
     cur = new
     chat.messages.pop()
-    chat.save_convo(temp_home / 'test.txt', mode='json', override=True)
-    with open(temp_home / 'test.txt') as f:
+    chat.save_convo(temp_home / "test.txt", mode="json", override=True)
+    with open(temp_home / "test.txt") as f:
         new = json.load(f)
     assert cur != new
+
 
 @pytest.mark.parametrize(
     ("alias", "json", "name"),
@@ -383,7 +400,7 @@ def test_loads_from_convo(xession, temp_home):
     chat_file = temp_home / "expected" / "no_color_convo2.txt"
     new_cls = ChatGPT.fromconvo(chat_file)
     assert isinstance(new_cls, ChatGPT)
-    assert new_cls.base[0] == {'role': 'system', 'content': 'Test\n'}
+    assert new_cls.base[0] == {"role": "system", "content": "Test\n"}
     assert "Please write me a hello world function" in new_cls.messages[0]["content"]
 
 
@@ -398,12 +415,15 @@ def test_loads_from_convo_raises_file_not_found(xession, temp_home):
     with pytest.raises(FileNotFoundError):
         ChatGPT.fromconvo("invalid.txt")
 
+
 def test_loads_and_trims(xession, temp_home, monkeypatch):
-    chat_file = temp_home / 'expected' / 'convo2.json'
+    chat_file = temp_home / "expected" / "convo2.json"
+
     def trim_convo(self):
         while self.tokens > 650:
             self.chat_idx += 1
-    monkeypatch.setattr('xontrib_chatgpt.chatgpt.ChatGPT.trim_convo', trim_convo)
+
+    monkeypatch.setattr("xontrib_chatgpt.chatgpt.ChatGPT.trim_convo", trim_convo)
     new_cls = ChatGPT.fromconvo(chat_file)
     assert new_cls.chat_idx == -1
 

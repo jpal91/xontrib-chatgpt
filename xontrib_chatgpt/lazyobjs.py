@@ -1,6 +1,12 @@
 """Lazy objects for xontrib_chatgpt"""
+
 import re
 from collections import namedtuple
+from xonsh.built_ins import XSH
+from xontrib_chatgpt.exceptions import (
+    NoApiKeyError,
+)
+from openai import OpenAI
 
 #############
 # Lazy Objects
@@ -9,9 +15,11 @@ from collections import namedtuple
 
 def _openai():
     """Imports openai"""
-    import openai
 
-    return openai
+    api_key = XSH.env.get("OPENAI_API_KEY", None)
+    if not api_key:
+        raise NoApiKeyError()
+    return OpenAI(api_key=str(api_key))
 
 
 def _tiktoken():
@@ -70,12 +78,14 @@ def _FIND_NAME_REGEX():
     """Regex to find the name of a chat from a file name"""
     return re.compile(r"^(?:.+?_)*([a-zA-Z0-9]+)(?:_[0-9\-]+)?\.(?:.*)$", re.DOTALL)
 
+
 def _YAML():
     """Imports yaml package if it exists"""
     from importlib.util import find_spec
 
     if find_spec("yaml") is not None:
         import yaml
+
         return yaml
     else:
         return None
