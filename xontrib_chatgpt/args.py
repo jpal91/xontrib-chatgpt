@@ -1,4 +1,5 @@
 """Argument parsers for ChatGPT and ChatManager"""
+
 from argparse import ArgumentParser
 
 
@@ -126,11 +127,11 @@ def _cm_parse() -> ArgumentParser:
         help="Mode to print or save the conversation. Default is text",
     )
     p_save.add_argument(
-        '-o',
-        '--overwrite',
-        action='store_true',
-        help='If set, overwrites the existing file with the same name. Otherwise, the file will be saved with a number appended to the end of the name.',
-        dest='override'
+        "-o",
+        "--overwrite",
+        action="store_true",
+        help="If set, overwrites the existing file with the same name. Otherwise, the file will be saved with a number appended to the end of the name.",
+        dest="override",
     )
 
     p_print = subparser.add_parser("print", help="Print a chat", aliases=["p"])
@@ -162,27 +163,29 @@ def _cm_parse() -> ArgumentParser:
         nargs="?",
     )
 
-    p_edit = subparser.add_parser('edit', help="Edit a chat's settings", aliases=['e'])
+    p_edit = subparser.add_parser("edit", help="Edit a chat's settings", aliases=["e"])
     p_edit.add_argument(
-        'name',
+        "name",
         type=str,
         help="Name of the chat to edit. Defaults to last used/current chat",
         nargs="?",
         default="",
     )
+    (
+        p_edit.add_argument(
+            "-s",
+            "--system",
+            help="Edit base system messages/instructions to be sent to your chat instance. Must be a python list[dict], dict, or yaml equivalent. See documentation for more information.",
+            dest="sys_msgs",
+            default="",
+        ),
+    )
     p_edit.add_argument(
-        '-s',
-        '--system',
-        help='Edit base system messages/instructions to be sent to your chat instance. Must be a python list[dict], dict, or yaml equivalent. See documentation for more information.',
-        dest='sys_msgs',
-        default='',
-    ),
-    p_edit.add_argument(
-        '-C',
-        '--no-code',
-        help='If set, the default instruction to add markdown code blocks will be removed. Only input system messages will be added.',
-        dest='no_code',
-        action='store_true'
+        "-C",
+        "--no-code",
+        help="If set, the default instruction to add markdown code blocks will be removed. Only input system messages will be added.",
+        dest="no_code",
+        action="store_true",
     )
 
     return parser

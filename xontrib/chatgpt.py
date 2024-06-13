@@ -1,4 +1,5 @@
 """chatgpt xontrib"""
+
 from xonsh.built_ins import XonshSession
 
 from xontrib_chatgpt.chatgpt import ChatGPT
@@ -37,4 +38,3 @@ def _unload_xontrib_(xsh: XonshSession, **_):
 
     if "abbrevs" in xsh.ctx:
         del xsh.ctx["abbrevs"]["cm"]
-    

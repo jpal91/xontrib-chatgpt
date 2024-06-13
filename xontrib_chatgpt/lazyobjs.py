@@ -1,4 +1,5 @@
 """Lazy objects for xontrib_chatgpt"""
+
 import re
 from collections import namedtuple
 
@@ -70,12 +71,14 @@ def _FIND_NAME_REGEX():
     """Regex to find the name of a chat from a file name"""
     return re.compile(r"^(?:.+?_)*([a-zA-Z0-9]+)(?:_[0-9\-]+)?\.(?:.*)$", re.DOTALL)
 
+
 def _YAML():
     """Imports yaml package if it exists"""
     from importlib.util import find_spec
 
     if find_spec("yaml") is not None:
         import yaml
+
         return yaml
     else:
         return None

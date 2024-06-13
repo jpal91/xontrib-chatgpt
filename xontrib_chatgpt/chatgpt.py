@@ -1,4 +1,5 @@
 """Main ChatGPT class"""
+
 import sys
 import os
 import json
@@ -20,7 +21,7 @@ from xontrib_chatgpt.utils import (
     parse_convo,
     print_res,
     format_markdown,
-    get_default_path
+    get_default_path,
 )
 from xontrib_chatgpt.exceptions import (
     NoApiKeyError,
@@ -171,7 +172,7 @@ class ChatGPT(Block):
     @property
     def tokens(self) -> int:
         """Current convo tokens"""
-        return self._base_tokens + sum(self._tokens[self.chat_idx:])
+        return self._base_tokens + sum(self._tokens[self.chat_idx :])
 
     @property
     def base(self) -> list[dict[str, str]]:
@@ -181,10 +182,10 @@ class ChatGPT(Block):
     def base(self, msgs: list[dict[str, str]]) -> None:
         self._base_tokens = sum(get_token_list(msgs))
         self._base = msgs
-    
+
     @property
     def chat_convo(self) -> list[dict[str, str]]:
-        return self.base + self.messages[self.chat_idx:]
+        return self.base + self.messages[self.chat_idx :]
 
     def stats(self) -> None:
         """Prints conversation stats to shell"""
@@ -271,7 +272,7 @@ class ChatGPT(Block):
         self.trim_convo()
 
         return res_text["content"]
-    
+
     def trim_convo(self) -> None:
         while self.chat_idx < -1 and self.tokens > self._max_tokens:
             self.chat_idx += 1

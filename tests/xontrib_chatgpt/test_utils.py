@@ -9,6 +9,7 @@ from xontrib_chatgpt.utils import (
     convert_to_sys,
 )
 
+
 @pytest.fixture
 def sys_msgs():
     l = """[
@@ -30,6 +31,7 @@ def sys_msgs():
 
     return l, d, y
 
+
 MARKDOWN_BLOCK = """\
 Hello!
 ```python
@@ -37,10 +39,12 @@ print('Hello World!')
 ```
 """
 
+
 def test_format_markdown(xession):
     md = format_markdown(MARKDOWN_BLOCK)
     assert "\x1b" in md
     assert "```" not in md
+
 
 def test_parses_json(xession, temp_home):
     json_path = temp_home / "expected" / "convo.json"
@@ -62,8 +66,9 @@ def test_parses_text(xession, temp_home):
     for r in msgs:
         assert r["role"] in ["user", "assistant"]
         assert r["content"] != ""
-    
-    assert base[0] == {'role': 'system', 'content': 'This is a test.\n'}
+
+    assert base[0] == {"role": "system", "content": "This is a test.\n"}
+
 
 def test_get_token_list(xession, temp_home):
     json_path = temp_home / "expected" / "convo2.json"
@@ -72,6 +77,7 @@ def test_get_token_list(xession, temp_home):
     res = get_token_list(exp_json)
     assert len(res) == 7
     assert sum(res) == 835
+
 
 def test_convert_to_sys(xession, sys_msgs):
     l, d, y = sys_msgs
