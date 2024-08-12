@@ -9,7 +9,11 @@ from textwrap import dedent
 from xonsh.built_ins import XSH
 from xonsh.tools import indent
 from xonsh.ansi_colors import ansi_partial_color_format
-from xonsh.lazyasd import LazyObject
+
+try:
+    from xonsh.lib.lazyasd import LazyObject
+except ImportError:
+    from xonsh.lazyasd import LazyObject
 
 from xontrib_chatgpt.lazyobjs import (
     _tiktoken,

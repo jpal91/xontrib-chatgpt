@@ -8,9 +8,14 @@ from typing import TextIO
 from xonsh.built_ins import XSH
 from xonsh.tools import indent
 from xonsh.contexts import Block
-from xonsh.lazyasd import LazyObject
+
+try:
+    from xonsh.lib.lazyasd import LazyObject
+except ImportError:
+    from xonsh.lazyasd import LazyObject
+
 from xonsh.ansi_colors import ansi_partial_color_format
-from openai.error import OpenAIError
+from openai import OpenAIError, OpenAI
 
 from xontrib_chatgpt.args import _gpt_parse
 from xontrib_chatgpt.lazyobjs import (
@@ -24,13 +29,12 @@ from xontrib_chatgpt.utils import (
     get_default_path,
 )
 from xontrib_chatgpt.exceptions import (
-    NoApiKeyError,
     UnsupportedModelError,
     NoConversationsError,
     InvalidConversationsTypeError,
 )
 
-openai = LazyObject(_openai, globals(), "openai")
+openai: OpenAI = LazyObject(_openai, globals(), "openai")  # type: ignore
 parse = LazyObject(_gpt_parse, globals(), "parse")
 
 DOCSTRING = """\
@@ -38,7 +42,7 @@ Allows for communication with ChatGPT from the xonsh shell.
 
 This class can be assigned to a variable and used to have a continuous
     conversation with ChatGPT.
-Alternatively, an alias 'chatgpt' is automatically registered 
+Alternatively, an alias 'chatgpt' is automatically registered
     when the xontrib is loaded, which can be used to have one-off conversations.
 
 Args:
@@ -53,13 +57,13 @@ Usage:
     >>> gpt = ChatGPT()
     >>> with! gpt:
             [text] # text will be sent to ChatGPT
-    
+
     # With a ChatGPT instance and an alias
     >>> gpt = ChatGPT('gpt')
     >>> gpt [text] # text will be sent to ChatGPT
     >>> with! gpt:
             [text] # text will be sent to ChatGPT
-    
+
     # Get Help
     >>> chatgpt? # With default alias
     >>> gpt = ChatGPT()
@@ -236,20 +240,15 @@ class ChatGPT(Block):
                 f"Unsupported model: {model} - options are {choices}"
             )
 
-        if not openai.api_key:
-            api_key = XSH.env.get("OPENAI_API_KEY", None)
-            if not api_key:
-                raise NoApiKeyError()
-            openai.api_key = api_key
-
         self.messages.append({"role": "user", "content": text})
         self.chat_idx -= 1
 
         try:
-            response = openai.ChatCompletion.create(
+            response = openai.chat.completions.create(
                 model=model,
                 messages=self.chat_convo,
             )
+            assert response, "Response is None"
         except OpenAIError as e:
             self.messages.pop()
             self.chat_idx += 1
@@ -259,10 +258,13 @@ class ChatGPT(Block):
                 )
             )
 
-        res_text = response["choices"][0]["message"]
+        res_text = dict(response.choices[0].message)
+        assert res_text, "Response is empty"
+        usage = response.usage
+        assert usage, "Usage is None"
         user_toks, gpt_toks = (
-            response["usage"]["prompt_tokens"],
-            response["usage"]["completion_tokens"],
+            usage.prompt_tokens,
+            usage.completion_tokens,
         )
 
         self.messages.append(res_text)

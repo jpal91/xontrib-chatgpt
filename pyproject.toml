@@ -1,7 +1,7 @@
 
 [project]
 name = "xontrib-chatgpt"
-version = "0.2.2"
+version = "0.2.3"
 license = { file = "LICENSE" }
 description = "Gives the ability to use ChatGPT directly from the command line"
 classifiers = [
@@ -16,7 +16,7 @@ requires-python = ">=3.9"
 dependencies = [
     "xonsh>=0.12.5",
     "prompt_toolkit>=3.0.36",
-    "openai>=0.28.0, < 1",
+    "openai>=1",
     "pygments>=2.16.1",
     "tiktoken>=0.5.1",
 ]

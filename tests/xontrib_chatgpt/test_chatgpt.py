@@ -3,8 +3,13 @@ import json
 import shutil
 import pytest
 from datetime import datetime
-from openai.error import RateLimitError
-from xontrib_chatgpt.chatgpt import ChatGPT, parse_convo, get_token_list
+from unittest.mock import MagicMock, Mock, create_autospec
+from openai import RateLimitError, OpenAI
+from openai.resources import Chat
+from openai.types.chat.chat_completion import ChatCompletion, Choice
+from openai.types.completion_usage import CompletionUsage
+from openai.types.chat.chat_completion_message import ChatCompletionMessage
+from xontrib_chatgpt.chatgpt import ChatGPT
 from xontrib_chatgpt.exceptions import (
     NoApiKeyError,
     UnsupportedModelError,
@@ -27,17 +32,6 @@ def hello_world():
     print('Hello world!')
 ```
 """
-
-
-class DummyAI:
-    def __init__(self):
-        self.api_key = None
-
-    def create(self, **_):
-        return {
-            "choices": [{"message": {"content": "test", "role": "assistant"}}],
-            "usage": {"prompt_tokens": 1, "completion_tokens": 1},
-        }
 
 
 @pytest.fixture(scope="module")
@@ -65,9 +59,23 @@ def temp_home(tmpdir_factory):
 
 @pytest.fixture
 def monkeypatch_openai(monkeypatch):
-    dummy_ai = DummyAI()
-    dummy_ai.ChatCompletion = DummyAI()
-    monkeypatch.setattr("xontrib_chatgpt.chatgpt.openai", dummy_ai)
+    dummy_instance = MagicMock()
+    dummy_ai = Mock(spec=OpenAI)
+    dummy_ai.return_value = dummy_instance
+
+    choice = Mock(spec=Choice)
+    choice.message = {"content": "test", "role": "assistant"}
+    choices = [choice]
+    usage = Mock(spec=CompletionUsage)
+    usage.prompt_tokens = 1
+    usage.completion_tokens = 1
+
+    response = Mock(spec=ChatCompletion)
+    response.choices = choices
+    response.usage = usage
+
+    dummy_instance.chat.completions.create.return_value = response
+    monkeypatch.setattr("xontrib_chatgpt.chatgpt.openai", dummy_instance)
 
 
 @pytest.fixture
@@ -109,7 +117,7 @@ def test_tokens(xession, chat):
     assert chat.tokens == 59
 
 
-def test_chat_raises_error_with_no_api_key(xession, chat, monkeypatch_openai):
+def test_chat_raises_error_with_no_api_key(xession, chat):
     xession.env["OPENAI_API_KEY"] = ""
     with pytest.raises(NoApiKeyError):
         chat.chat("test")
@@ -129,9 +137,7 @@ def test_chat_catches_openai_errors(xession, chat, monkeypatch):
     def raise_it(*_, **__):
         raise RateLimitError("test")
 
-    monkeypatch.setattr(
-        "xontrib_chatgpt.chatgpt.openai.ChatCompletion.create", raise_it
-    )
+    monkeypatch.setattr("xontrib_chatgpt.chatgpt.openai.completions.create", raise_it)
     with pytest.raises(SystemExit):
         chat.chat("test")
 
@@ -149,7 +155,7 @@ def test_chat_convo(xession, chat):
 def test_chat_response(xession, monkeypatch_openai, chat):
     xession.env["OPENAI_API_KEY"] = "test"
     assert chat.chat_idx == 0
-    chat.chat("test") == "test"
+    assert chat.chat("test") == "test"
     assert chat.messages == [
         {"role": "user", "content": "test"},
         {"role": "assistant", "content": "test"},
@@ -187,6 +193,7 @@ def test_trim_convo(xession, chat):
 
 def test_set_base_msgs(xession, chat):
     assert chat._base_tokens == 53
+    chat.base = [{"role": "system", "content": "test"}]
     chat.base = [{"role": "system", "content": "test"}]
     assert chat._base_tokens == 8
 
@@ -395,6 +402,7 @@ def test_loads_from_convo(xession, temp_home):
     new_cls = ChatGPT.fromconvo(chat_file)
     assert isinstance(new_cls, ChatGPT)
     assert new_cls.base[0] == {"role": "system", "content": "Test\n"}
+    assert new_cls.base[0] == {"role": "system", "content": "Test\n"}
     assert "Please write me a hello world function" in new_cls.messages[0]["content"]
 
 
@@ -413,9 +421,13 @@ def test_loads_from_convo_raises_file_not_found(xession, temp_home):
 def test_loads_and_trims(xession, temp_home, monkeypatch):
     chat_file = temp_home / "expected" / "convo2.json"
 
+    chat_file = temp_home / "expected" / "convo2.json"
+
     def trim_convo(self):
         while self.tokens > 650:
             self.chat_idx += 1
+
+    monkeypatch.setattr("xontrib_chatgpt.chatgpt.ChatGPT.trim_convo", trim_convo)
 
     monkeypatch.setattr("xontrib_chatgpt.chatgpt.ChatGPT.trim_convo", trim_convo)
     new_cls = ChatGPT.fromconvo(chat_file)
